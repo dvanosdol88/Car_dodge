@@ -43,6 +43,50 @@
             color: #34495e;
         }
 
+        /* Speed Limit Sign */
+        #speedLimitSign {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 80px;
+            height: 100px;
+            background: white;
+            border: 4px solid #000;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial Black', Arial, sans-serif;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 5;
+        }
+
+        .speed-limit-header {
+            font-size: 10px;
+            color: #000;
+            margin-bottom: 2px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .speed-limit-number {
+            font-size: 28px;
+            color: #000;
+            margin: 2px 0;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .speed-limit-footer {
+            font-size: 8px;
+            color: #000;
+            margin-top: 2px;
+            text-align: center;
+            line-height: 1;
+        }
+
         #gameOverScreen, #initialScreen {
             position: absolute;
             top: 50%;
@@ -262,6 +306,14 @@
     <h1>Car Dodge</h1>
     <canvas id="gameCanvas"></canvas>
     <div id="gameStatus"></div>
+    
+    <!-- Speed Limit Sign -->
+    <div id="speedLimitSign">
+        <div class="speed-limit-header">SPEED</div>
+        <div class="speed-limit-header">LIMIT</div>
+        <div class="speed-limit-number" id="speedLimitNumber">25</div>
+        <div class="speed-limit-footer">MPH</div>
+    </div>
 
     <div id="initialScreen">
         <h2>Welcome to Car Dodge!</h2>
@@ -316,7 +368,8 @@
         let bonusTexts = []; // New: For "100 Bonus Points!" messages
 
         let score = 0;
-        let gameSpeed = 5; // Pixels per frame
+        let gameSpeed = 2; // Pixels per frame (reduced initial speed)
+        let currentMPH = 25; // Current speed in MPH
         let gameOver = false;
         let roadCurveOffset = 0; // Current horizontal offset for road curves
         let curveDirection = 1; // 1 for right, -1 for left
@@ -936,6 +989,28 @@
         }
 
         /**
+         * Updates the game speed and speed limit sign
+         */
+        function updateSpeed() {
+            // Calculate MPH based on score (25 MPH to 100 MPH)
+            const maxScore = 5000; // Score at which max speed is reached
+            const speedRange = 100 - 25; // 75 MPH range
+            const speedProgress = Math.min(score / maxScore, 1); // 0 to 1
+            
+            currentMPH = Math.floor(25 + (speedRange * speedProgress));
+            currentMPH = Math.min(currentMPH, 100); // Cap at 100 MPH
+            
+            // Convert MPH to game speed (pixels per frame)
+            // 25 MPH = 2 pixels, 100 MPH = 8 pixels
+            const minGameSpeed = 2;
+            const maxGameSpeed = 8;
+            gameSpeed = minGameSpeed + ((maxGameSpeed - minGameSpeed) * speedProgress);
+            
+            // Update speed limit sign
+            document.getElementById('speedLimitNumber').textContent = currentMPH;
+        }
+
+        /**
          * Updates game state: obstacles, trees, projectiles, etc.
          */
         function update() {
@@ -1034,8 +1109,8 @@
                 generateTree(false);
             }
 
-            // Increase game speed gradually
-            gameSpeed = Math.min(gameSpeed + 0.005, 12);
+            // Increase game speed gradually (25 MPH to 100 MPH)
+            updateSpeed();
 
             // Check collisions
             checkCollisions();
@@ -1226,7 +1301,8 @@
             explosions = [];
             bonusTexts = [];
             score = 0;
-            gameSpeed = 5;
+            gameSpeed = 2; // Start slow again
+            currentMPH = 25; // Reset to 25 MPH
             roadCurveOffset = 0;
             curveDirection = 1;
             playerCar.rotation = 0; // Ensure rotation is reset
@@ -1399,7 +1475,8 @@
             explosions = [];
             bonusTexts = [];
             score = 0;
-            gameSpeed = 5; // Reset speed
+            gameSpeed = 2; // Start slow at 25 MPH
+            currentMPH = 25; // Initialize to 25 MPH
             gameOver = false;
             roadCurveOffset = 0;
             curveDirection = 1;
