@@ -368,7 +368,7 @@
         let bonusTexts = []; // New: For "100 Bonus Points!" messages
 
         let score = 0;
-        let gameSpeed = 2; // Pixels per frame (reduced initial speed)
+        let gameSpeed = 4; // Pixels per frame (faster initial speed)
         let currentMPH = 25; // Current speed in MPH
         let gameOver = false;
         let roadCurveOffset = 0; // Current horizontal offset for road curves
@@ -1001,9 +1001,9 @@
             currentMPH = Math.min(currentMPH, 100); // Cap at 100 MPH
             
             // Convert MPH to game speed (pixels per frame)
-            // 25 MPH = 2 pixels, 100 MPH = 8 pixels
-            const minGameSpeed = 2;
-            const maxGameSpeed = 8;
+            // 25 MPH = 4 pixels, 100 MPH = 12 pixels
+            const minGameSpeed = 4;
+            const maxGameSpeed = 12;
             gameSpeed = minGameSpeed + ((maxGameSpeed - minGameSpeed) * speedProgress);
             
             // Update speed limit sign
@@ -1301,7 +1301,7 @@
             explosions = [];
             bonusTexts = [];
             score = 0;
-            gameSpeed = 2; // Start slow again
+            gameSpeed = 4; // Start with faster speed
             currentMPH = 25; // Reset to 25 MPH
             roadCurveOffset = 0;
             curveDirection = 1;
@@ -1476,7 +1476,7 @@
             explosions = [];
             bonusTexts = [];
             score = 0;
-            gameSpeed = 2; // Start slow at 25 MPH
+            gameSpeed = 4; // Start faster at 25 MPH
             currentMPH = 25; // Initialize to 25 MPH
             gameOver = false;
             roadCurveOffset = 0;
