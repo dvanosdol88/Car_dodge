@@ -1,0 +1,24 @@
+services:
+  # Backend API Service
+  - type: web
+    name: car-dodge-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: postgresql://scores_db_z2az_user:0lGBD5U4FWxgGNBR7eAuUCfBFUs07hLv@dpg-d17h82umcj7s73d7ifsg-a.oregon-postgres.render.com/scores_db_z2az
+
+  # Frontend Static Site
+  - type: static
+    name: car-dodge-frontend
+    buildCommand: echo "No build needed"
+    staticPublishPath: .
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

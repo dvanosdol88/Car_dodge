@@ -1,0 +1,13 @@
+{
+  "name": "car-dodge-game",
+  "version": "1.0.0",
+  "description": "Car Dodge Game with Leaderboard",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": ["game", "car", "dodge", "leaderboard"],
+  "author": "David Van Osdol",
+  "license": "MIT"
+}
