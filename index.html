@@ -420,6 +420,28 @@
         }
 
         /**
+         * Calculate perspective scaling factor based on Y position
+         * @param {number} y - The Y position (0 = far away, canvas.height = close)
+         * @returns {number} Scale factor between 0.3 (far) and 1.0 (close)
+         */
+        function getPerspectiveScale(y) {
+            const minScale = 0.3; // Objects at top of screen (far away)
+            const maxScale = 1.0; // Objects at bottom of screen (close)
+            const normalizedY = y / canvas.height; // 0 to 1
+            return minScale + (maxScale - minScale) * normalizedY;
+        }
+
+        /**
+         * Get perspective-adjusted road width at a given Y position
+         * @param {number} y - The Y position
+         * @returns {number} Road width at that position
+         */
+        function getPerspectiveRoadWidth(y) {
+            const scale = getPerspectiveScale(y);
+            return ROAD_WIDTH * scale;
+        }
+
+        /**
          * Draws the player's stylized blue car, applying rotation if spinning.
          */
         function drawPlayerCar() {
@@ -474,26 +496,53 @@
         }
 
         /**
-         * Draws the road with its lanes and accounts for the road curvature.
+         * Draws the road with perspective (trapezoid shape) and lanes with curvature.
          */
         function drawRoad() {
+            // Calculate road bounds at top and bottom with perspective
             const roadCenterX = canvas.width / 2 + roadCurveOffset;
-            const roadX = roadCenterX - ROAD_WIDTH / 2;
+            
+            // Road width at different Y positions
+            const topRoadWidth = getPerspectiveRoadWidth(0);
+            const bottomRoadWidth = getPerspectiveRoadWidth(canvas.height);
+            
+            // Road edges at top (far away)
+            const topRoadLeft = roadCenterX - topRoadWidth / 2;
+            const topRoadRight = roadCenterX + topRoadWidth / 2;
+            
+            // Road edges at bottom (close)
+            const bottomRoadLeft = roadCenterX - bottomRoadWidth / 2;
+            const bottomRoadRight = roadCenterX + bottomRoadWidth / 2;
 
-            drawRect(roadX, 0, ROAD_WIDTH, canvas.height, '#555');
-
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 5;
-            ctx.setLineDash([30, 30]);
-
+            // Draw road surface as trapezoid
+            ctx.fillStyle = '#555';
             ctx.beginPath();
-            ctx.moveTo(roadX + LANE_WIDTH, 0);
-            ctx.lineTo(roadX + LANE_WIDTH, canvas.height);
+            ctx.moveTo(topRoadLeft, 0);
+            ctx.lineTo(topRoadRight, 0);
+            ctx.lineTo(bottomRoadRight, canvas.height);
+            ctx.lineTo(bottomRoadLeft, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw lane markings with perspective
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([20, 20]);
+
+            // Left lane marking (1/3 across road)
+            const topLane1 = topRoadLeft + topRoadWidth / 3;
+            const bottomLane1 = bottomRoadLeft + bottomRoadWidth / 3;
+            ctx.beginPath();
+            ctx.moveTo(topLane1, 0);
+            ctx.lineTo(bottomLane1, canvas.height);
             ctx.stroke();
 
+            // Right lane marking (2/3 across road)
+            const topLane2 = topRoadLeft + (topRoadWidth * 2) / 3;
+            const bottomLane2 = bottomRoadLeft + (bottomRoadWidth * 2) / 3;
             ctx.beginPath();
-            ctx.moveTo(roadX + 2 * LANE_WIDTH, 0);
-            ctx.lineTo(roadX + 2 * LANE_WIDTH, canvas.height);
+            ctx.moveTo(topLane2, 0);
+            ctx.lineTo(bottomLane2, canvas.height);
             ctx.stroke();
 
             ctx.setLineDash([]);
@@ -505,113 +554,142 @@
         function drawObstacles() {
             obstacles.forEach(obstacle => {
                 const adjustedObstacleX = obstacle.x + roadCurveOffset;
+                
+                // Calculate perspective scaling
+                const scale = getPerspectiveScale(obstacle.y);
+                const scaledWidth = obstacle.width * scale;
+                const scaledHeight = obstacle.height * scale;
+                const scaledX = adjustedObstacleX + (obstacle.width - scaledWidth) / 2; // Center the scaled object
 
                 if (obstacle.type === 'car') {
-                    // Stylized car
+                    // Stylized car with perspective
                     ctx.fillStyle = obstacle.color;
                     ctx.strokeStyle = 'black';
-                    ctx.lineWidth = 1;
+                    ctx.lineWidth = Math.max(1, 1 * scale);
                     ctx.beginPath();
                     // Using roundRect for a more consistent look with player car
                     if (ctx.roundRect) { // Check for roundRect support
-                         ctx.roundRect(adjustedObstacleX, obstacle.y, obstacle.width, obstacle.height, 5);
+                         ctx.roundRect(scaledX, obstacle.y, scaledWidth, scaledHeight, 5 * scale);
                     } else { // Fallback for older browsers
-                        ctx.rect(adjustedObstacleX, obstacle.y, obstacle.width, obstacle.height);
+                        ctx.rect(scaledX, obstacle.y, scaledWidth, scaledHeight);
                     }
                     ctx.fill();
                     ctx.stroke();
-                    // Wheels
+                    // Wheels (scaled)
                     ctx.fillStyle = 'black';
-                    ctx.fillRect(adjustedObstacleX + 2, obstacle.y + obstacle.height - 10, obstacle.width / 4, 8);
-                    ctx.fillRect(adjustedObstacleX + obstacle.width - obstacle.width / 4 - 2, obstacle.y + obstacle.height - 10, obstacle.width / 4, 8);
-                    ctx.fillRect(adjustedObstacleX + 2, obstacle.y + 2, obstacle.width / 4, 8);
-                    ctx.fillRect(adjustedObstacleX + obstacle.width - obstacle.width / 4 - 2, obstacle.y + 2, obstacle.width / 4, 8);
+                    const wheelWidth = (scaledWidth / 4);
+                    const wheelHeight = 8 * scale;
+                    const wheelInset = 2 * scale;
+                    ctx.fillRect(scaledX + wheelInset, obstacle.y + scaledHeight - wheelHeight - wheelInset, wheelWidth, wheelHeight);
+                    ctx.fillRect(scaledX + scaledWidth - wheelWidth - wheelInset, obstacle.y + scaledHeight - wheelHeight - wheelInset, wheelWidth, wheelHeight);
+                    ctx.fillRect(scaledX + wheelInset, obstacle.y + wheelInset, wheelWidth, wheelHeight);
+                    ctx.fillRect(scaledX + scaledWidth - wheelWidth - wheelInset, obstacle.y + wheelInset, wheelWidth, wheelHeight);
 
                 } else if (obstacle.type === 'motorcycle') {
-                    // Stylized motorcycle
+                    // Stylized motorcycle with perspective
                     ctx.fillStyle = obstacle.color;
                     ctx.strokeStyle = 'black';
-                    ctx.lineWidth = 1;
+                    ctx.lineWidth = Math.max(1, 1 * scale);
                     ctx.beginPath();
-                    ctx.arc(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2, obstacle.width / 2, 0, Math.PI * 2);
+                    ctx.arc(scaledX + scaledWidth / 2, obstacle.y + scaledHeight / 2, scaledWidth / 2, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
-                    // Handlebars
+                    // Handlebars (scaled)
                     ctx.beginPath();
-                    ctx.moveTo(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height * 0.2);
-                    ctx.lineTo(adjustedObstacleX + obstacle.width * 0.1, obstacle.y + obstacle.height * 0.1);
-                    ctx.moveTo(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height * 0.2);
-                    ctx.lineTo(adjustedObstacleX + obstacle.width * 0.9, obstacle.y + obstacle.height * 0.1);
+                    ctx.moveTo(scaledX + scaledWidth / 2, obstacle.y + scaledHeight * 0.2);
+                    ctx.lineTo(scaledX + scaledWidth * 0.1, obstacle.y + scaledHeight * 0.1);
+                    ctx.moveTo(scaledX + scaledWidth / 2, obstacle.y + scaledHeight * 0.2);
+                    ctx.lineTo(scaledX + scaledWidth * 0.9, obstacle.y + scaledHeight * 0.1);
                     ctx.stroke();
-                    // Wheels
+                    // Wheels (scaled)
                     ctx.fillStyle = 'black';
                     ctx.beginPath();
-                    ctx.arc(adjustedObstacleX + obstacle.width * 0.25, obstacle.y + obstacle.height * 0.85, obstacle.width * 0.2, 0, Math.PI * 2);
+                    ctx.arc(scaledX + scaledWidth * 0.25, obstacle.y + scaledHeight * 0.85, scaledWidth * 0.2, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.beginPath();
-                    ctx.arc(adjustedObstacleX + obstacle.width * 0.75, obstacle.y + obstacle.height * 0.85, obstacle.width * 0.2, 0, Math.PI * 2);
+                    ctx.arc(scaledX + scaledWidth * 0.75, obstacle.y + scaledHeight * 0.85, scaledWidth * 0.2, 0, Math.PI * 2);
                     ctx.fill();
 
                 } else if (obstacle.type === 'oilSlick') {
+                    // Oil slick with perspective
                     ctx.fillStyle = '#1a1a1a'; // Very dark grey/black
                     ctx.beginPath();
-                    ctx.ellipse(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2,
-                                obstacle.width / 2, obstacle.height / 2, Math.PI / 4, 0, Math.PI * 2);
+                    ctx.ellipse(scaledX + scaledWidth / 2, obstacle.y + scaledHeight / 2,
+                                scaledWidth / 2, scaledHeight / 2, Math.PI / 4, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#333';
                     ctx.beginPath();
-                    ctx.ellipse(adjustedObstacleX + obstacle.width * 0.4, obstacle.y + obstacle.height * 0.4,
-                                obstacle.width * 0.2, obstacle.height * 0.2, -Math.PI / 6, 0, Math.PI * 2);
+                    ctx.ellipse(scaledX + scaledWidth * 0.4, obstacle.y + scaledHeight * 0.4,
+                                scaledWidth * 0.2, scaledHeight * 0.2, -Math.PI / 6, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (obstacle.type === 'tank') {
-                    // Stylized Tank
+                    // Stylized Tank with perspective
                     ctx.fillStyle = obstacle.color; // Tank body color
                     ctx.strokeStyle = 'black';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = Math.max(1, 2 * scale);
 
-                    // Tank body
+                    // Tank body (scaled)
                     ctx.beginPath();
                     if (ctx.roundRect) { // Check for roundRect support
-                        ctx.roundRect(adjustedObstacleX, obstacle.y + obstacle.height * 0.3, obstacle.width, obstacle.height * 0.7, 8); // Main body
+                        ctx.roundRect(scaledX, obstacle.y + scaledHeight * 0.3, scaledWidth, scaledHeight * 0.7, 8 * scale); // Main body
                     } else { // Fallback for older browsers
-                        ctx.rect(adjustedObstacleX, obstacle.y + obstacle.height * 0.3, obstacle.width, obstacle.height * 0.7);
+                        ctx.rect(scaledX, obstacle.y + scaledHeight * 0.3, scaledWidth, scaledHeight * 0.7);
                     }
                     ctx.fill();
                     ctx.stroke();
 
-                    // Turret
+                    // Turret (scaled)
                     ctx.beginPath();
-                    ctx.arc(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height * 0.35, obstacle.width * 0.3, 0, Math.PI * 2);
+                    ctx.arc(scaledX + scaledWidth / 2, obstacle.y + scaledHeight * 0.35, scaledWidth * 0.3, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
 
-                    // Barrel
+                    // Barrel (scaled)
                     ctx.fillStyle = '#444';
-                    ctx.fillRect(adjustedObstacleX + obstacle.width / 2 - 5, obstacle.y - 10, 10, obstacle.height * 0.45); // Barrel
+                    const barrelWidth = 10 * scale;
+                    const barrelHeight = scaledHeight * 0.45;
+                    ctx.fillRect(scaledX + scaledWidth / 2 - barrelWidth / 2, obstacle.y - barrelHeight + scaledHeight * 0.3, barrelWidth, barrelHeight);
                 }
             });
         }
 
         /**
-         * Draws all trees on the sides of the road.
+         * Draws all trees on the sides of the road with perspective scaling.
          */
         function drawTrees() {
             trees.forEach(tree => {
                 const adjustedTreeX = tree.x + roadCurveOffset;
-                drawRect(adjustedTreeX, tree.y, tree.width, tree.height * 0.3, 'brown');
+                
+                // Calculate perspective scaling for trees
+                const scale = getPerspectiveScale(tree.y);
+                const scaledWidth = tree.width * scale;
+                const scaledHeight = tree.height * scale;
+                const scaledX = adjustedTreeX + (tree.width - scaledWidth) / 2; // Center the scaled tree
+                
+                // Tree trunk (scaled)
+                ctx.fillStyle = 'brown';
+                ctx.fillRect(scaledX, tree.y, scaledWidth, scaledHeight * 0.3);
+                
+                // Tree foliage (scaled)
                 ctx.fillStyle = 'green';
                 ctx.beginPath();
-                ctx.arc(adjustedTreeX + tree.width / 2, tree.y + tree.height * 0.3, tree.width * 0.7, 0, Math.PI * 2);
+                ctx.arc(scaledX + scaledWidth / 2, tree.y + scaledHeight * 0.3, scaledWidth * 0.7, 0, Math.PI * 2);
                 ctx.fill();
             });
         }
 
         /**
-         * Draws player's projectiles.
+         * Draws player's projectiles with perspective scaling.
          */
         function drawPlayerProjectiles() {
             playerProjectiles.forEach(proj => {
-                drawRect(proj.x, proj.y, proj.width, proj.height, proj.color);
+                // Calculate perspective scaling for projectiles
+                const scale = getPerspectiveScale(proj.y);
+                const scaledWidth = proj.width * scale;
+                const scaledHeight = proj.height * scale;
+                const scaledX = proj.x + (proj.width - scaledWidth) / 2; // Center the scaled projectile
+                
+                drawRect(scaledX, proj.y, scaledWidth, scaledHeight, proj.color);
             });
         }
 
@@ -620,7 +698,13 @@
          */
         function drawTankMissiles() {
             tankMissiles.forEach(missile => {
-                drawRect(missile.x, missile.y, missile.width, missile.height, missile.color);
+                // Calculate perspective scaling for missiles
+                const scale = getPerspectiveScale(missile.y);
+                const scaledWidth = missile.width * scale;
+                const scaledHeight = missile.height * scale;
+                const scaledX = missile.x + (missile.width - scaledWidth) / 2; // Center the scaled missile
+                
+                drawRect(scaledX, missile.y, scaledWidth, scaledHeight, missile.color);
             });
         }
 
@@ -1123,11 +1207,17 @@
             // Player Car vs Obstacles (cars, motorcycles, oil slicks, tanks)
             obstacles.forEach((obstacle, obstacleIndex) => {
                 const adjustedObstacleX = obstacle.x + roadCurveOffset;
+                
+                // Calculate perspective scaling for collision detection
+                const scale = getPerspectiveScale(obstacle.y);
+                const scaledWidth = obstacle.width * scale;
+                const scaledHeight = obstacle.height * scale;
+                const scaledX = adjustedObstacleX + (obstacle.width - scaledWidth) / 2;
 
                 if (
-                    playerCar.x < adjustedObstacleX + obstacle.width &&
-                    playerCar.x + playerCar.width > adjustedObstacleX &&
-                    playerCar.y < obstacle.y + obstacle.height &&
+                    playerCar.x < scaledX + scaledWidth &&
+                    playerCar.x + playerCar.width > scaledX &&
+                    playerCar.y < obstacle.y + scaledHeight &&
                     playerCar.y + playerCar.height > obstacle.y
                 ) {
                     if (obstacle.type === 'oilSlick') {
@@ -1161,17 +1251,24 @@
 
                     if (obstacle.type === 'tank') {
                         const adjustedObstacleX = obstacle.x + roadCurveOffset;
+                        
+                        // Calculate perspective scaling for tank collision
+                        const scale = getPerspectiveScale(obstacle.y);
+                        const scaledWidth = obstacle.width * scale;
+                        const scaledHeight = obstacle.height * scale;
+                        const scaledX = adjustedObstacleX + (obstacle.width - scaledWidth) / 2;
+                        
                         if (
-                            proj.x < adjustedObstacleX + obstacle.width &&
-                            proj.x + proj.width > adjustedObstacleX &&
-                            proj.y < obstacle.y + obstacle.height &&
+                            proj.x < scaledX + scaledWidth &&
+                            proj.x + proj.width > scaledX &&
+                            proj.y < obstacle.y + scaledHeight &&
                             proj.y + proj.height > obstacle.y
                         ) {
                             // Collision: Projectile hit tank!
                             obstacles.splice(j, 1); // Remove tank
-                            createExplosion(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2); // Create explosion
+                            createExplosion(scaledX + scaledWidth / 2, obstacle.y + scaledHeight / 2); // Create explosion
                             score += 100; // Add bonus points
-                            createBonusText(adjustedObstacleX + obstacle.width / 2, obstacle.y, "100 Bonus Points!");
+                            createBonusText(scaledX + scaledWidth / 2, obstacle.y, "100 Bonus Points!");
                             hitTank = true;
                             break; // Stop checking this projectile against other obstacles
                         }
@@ -1186,11 +1283,18 @@
             // Player Car vs Tank Missiles
             for (let i = tankMissiles.length - 1; i >= 0; i--) {
                 const missile = tankMissiles[i];
+                
+                // Calculate perspective scaling for missile collision
+                const scale = getPerspectiveScale(missile.y);
+                const scaledWidth = missile.width * scale;
+                const scaledHeight = missile.height * scale;
+                const scaledX = missile.x + (missile.width - scaledWidth) / 2;
+                
                 // Tank missiles are already in world coordinates, no roadCurveOffset needed for them relative to player
                 if (
-                    playerCar.x < missile.x + missile.width &&
-                    playerCar.x + playerCar.width > missile.x &&
-                    playerCar.y < missile.y + missile.height &&
+                    playerCar.x < scaledX + scaledWidth &&
+                    playerCar.x + playerCar.width > scaledX &&
+                    playerCar.y < missile.y + scaledHeight &&
                     playerCar.y + playerCar.height > missile.y
                 ) {
                     // Collision: Player hit by tank missile!
