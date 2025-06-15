@@ -124,6 +124,118 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
         }
 
+        /* Leaderboard styles */
+        #leaderboardScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 10;
+            min-width: 400px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #leaderboardScreen h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 2.2em;
+        }
+
+        .leaderboard-list {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .score-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin: 5px 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .score-entry.top-score {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border-left-color: #f39c12;
+            font-weight: bold;
+        }
+
+        .score-entry.current-player {
+            background: linear-gradient(135deg, #e8f5e8, #d4edda);
+            border-left-color: #28a745;
+            font-weight: bold;
+        }
+
+        .rank {
+            font-weight: bold;
+            color: #2c3e50;
+            min-width: 30px;
+        }
+
+        .player-name {
+            flex-grow: 1;
+            margin-left: 15px;
+            color: #34495e;
+        }
+
+        .score-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .new-high-score {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #2c3e50;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+            font-size: 1.8em;
+            font-weight: bold;
+            z-index: 15;
+            animation: celebration 2s ease-in-out;
+            text-align: center;
+        }
+
+        @keyframes celebration {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .leaderboard-button {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .leaderboard-button:hover {
+            background: linear-gradient(145deg, #8e44ad, #9b59b6);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
         @media (max-width: 768px) {
             canvas {
                 width: 95vw;
@@ -134,6 +246,14 @@
             }
             .control-button {
                 display: block;
+            }
+            #leaderboardScreen {
+                min-width: 300px;
+                padding: 20px;
+            }
+            .score-entry {
+                padding: 8px 10px;
+                font-size: 0.9em;
             }
         }
     </style>
@@ -147,13 +267,34 @@
         <h2>Welcome to Car Dodge!</h2>
         <p>Dodge other cars, oil slicks, and tank missiles.<br>Use ◀ and ▶ to move, Spacebar to shoot.</p>
         <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" style="padding: 10px; margin: 10px; border: 2px solid #ccc; border-radius: 5px; font-size: 1.1em;">
-        <button id="startButton">Start Game</button>
+        <div>
+            <button id="startButton">Start Game</button>
+            <button id="viewLeaderboardButton" class="leaderboard-button">View Leaderboard</button>
+        </div>
     </div>
 
     <div id="gameOverScreen" style="display:none;">
         <h2>Game Over!</h2>
         <p>Score: <span id="finalScore">0</span></p>
-        <button id="restartButton">Restart Game</button>
+        <p id="rankDisplay" style="display:none;">Rank: <span id="playerRank">-</span></p>
+        <div>
+            <button id="restartButton">Restart Game</button>
+            <button id="viewLeaderboardFromGameOver" class="leaderboard-button">View Leaderboard</button>
+        </div>
+    </div>
+
+    <div id="leaderboardScreen" style="display:none;">
+        <h2>🏆 High Scores</h2>
+        <div class="leaderboard-list" id="leaderboardList">
+            <p>Loading scores...</p>
+        </div>
+        <button id="closeLeaderboard" class="leaderboard-button">Close</button>
+        <button id="playAgain" class="leaderboard-button">Play Again</button>
+    </div>
+
+    <div id="newHighScoreAnnouncement" class="new-high-score" style="display:none;">
+        🎉 NEW HIGH SCORE! 🎉<br>
+        <span id="highScoreText">Congratulations!</span>
     </div>
 
     <div id="mobileControls">
@@ -675,6 +816,126 @@
         }
 
         /**
+         * Fetches high scores from backend API
+         * @param {number} limit - Number of scores to fetch
+         */
+        async function fetchHighScores(limit = 10) {
+            try {
+                const response = await fetch(`http://localhost:3000/scores?limit=${limit}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                return result.scores || [];
+            } catch (error) {
+                console.error('Failed to fetch high scores:', error);
+                return [];
+            }
+        }
+
+        /**
+         * Displays the leaderboard screen
+         */
+        async function showLeaderboard() {
+            const leaderboardScreen = document.getElementById('leaderboardScreen');
+            const leaderboardList = document.getElementById('leaderboardList');
+            
+            // Show loading message
+            leaderboardList.innerHTML = '<p>Loading scores...</p>';
+            leaderboardScreen.style.display = 'block';
+            
+            // Fetch scores
+            const scores = await fetchHighScores(10);
+            
+            if (scores.length === 0) {
+                leaderboardList.innerHTML = '<p>No scores yet. Be the first to play!</p>';
+                return;
+            }
+            
+            // Build leaderboard HTML
+            let leaderboardHTML = '';
+            scores.forEach((scoreEntry, index) => {
+                const rank = index + 1;
+                const isTopScore = rank === 1;
+                const isCurrentPlayer = scoreEntry.playerName === playerName && scoreEntry.score === score;
+                
+                const entryClass = isTopScore ? 'top-score' : (isCurrentPlayer ? 'current-player' : '');
+                
+                leaderboardHTML += `
+                    <div class="score-entry ${entryClass}">
+                        <span class="rank">#${rank}</span>
+                        <span class="player-name">${scoreEntry.playerName || 'Anonymous'}</span>
+                        <span class="score-value">${scoreEntry.score.toLocaleString()}</span>
+                    </div>
+                `;
+            });
+            
+            leaderboardList.innerHTML = leaderboardHTML;
+        }
+
+        /**
+         * Hides the leaderboard screen
+         */
+        function hideLeaderboard() {
+            document.getElementById('leaderboardScreen').style.display = 'none';
+        }
+
+        /**
+         * Shows new high score announcement
+         * @param {number} rank - The player's rank
+         */
+        function showNewHighScoreAnnouncement(rank) {
+            const announcement = document.getElementById('newHighScoreAnnouncement');
+            const highScoreText = document.getElementById('highScoreText');
+            
+            if (rank === 1) {
+                highScoreText.textContent = `You're #1! Score: ${score.toLocaleString()}`;
+            } else if (rank <= 5) {
+                highScoreText.textContent = `Top 5! Rank #${rank} - Score: ${score.toLocaleString()}`;
+            } else if (rank <= 10) {
+                highScoreText.textContent = `Top 10! Rank #${rank} - Score: ${score.toLocaleString()}`;
+            } else {
+                return; // Don't show announcement for ranks below 10
+            }
+            
+            announcement.style.display = 'block';
+            
+            // Hide after 4 seconds
+            setTimeout(() => {
+                announcement.style.display = 'none';
+            }, 4000);
+        }
+
+        /**
+         * Handles game over logic including high score submission and announcements
+         */
+        async function handleGameOver() {
+            try {
+                const result = await sendHighScore(playerName, score);
+                
+                if (result && result.rank) {
+                    // Show rank in game over screen
+                    const rankDisplay = document.getElementById('rankDisplay');
+                    const playerRank = document.getElementById('playerRank');
+                    playerRank.textContent = result.rank;
+                    rankDisplay.style.display = 'block';
+                    
+                    // Show high score announcement if in top 10
+                    if (result.rank <= 10) {
+                        // Delay the announcement slightly so game over screen appears first
+                        setTimeout(() => {
+                            showNewHighScoreAnnouncement(result.rank);
+                        }, 1000);
+                    }
+                }
+            } catch (error) {
+                console.error('Error handling game over:', error);
+            }
+        }
+
+        /**
          * Updates game state: obstacles, trees, projectiles, etc.
          */
         function update() {
@@ -807,8 +1068,8 @@
                         document.getElementById('finalScore').innerText = score;
                         document.getElementById('gameOverScreen').style.display = 'block';
                         Tone.Transport.stop();
-                        // Submit high score
-                        sendHighScore(playerName, score);
+                        // Submit high score and handle result
+                        handleGameOver();
                         // No need to cancelAnimationFrame here, animate() will handle it
                     }
                 }
@@ -863,8 +1124,8 @@
                     document.getElementById('finalScore').innerText = score;
                     document.getElementById('gameOverScreen').style.display = 'block';
                     Tone.Transport.stop();
-                    // Submit high score
-                    sendHighScore(playerName, score);
+                    // Submit high score and handle result
+                    handleGameOver();
                     // No need to cancelAnimationFrame here, animate() will handle it
                     return; // End game, no further checks needed
                 }
@@ -983,6 +1244,9 @@
             }
 
             document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('leaderboardScreen').style.display = 'none';
+            document.getElementById('newHighScoreAnnouncement').style.display = 'none';
+            document.getElementById('rankDisplay').style.display = 'none';
             // Resume music if it was stopped
             Tone.Transport.start();
             // Start animation loop again explicitly (though the unconditional requestAnimationFrame helps)
@@ -1153,9 +1417,22 @@
             }
 
             document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('leaderboardScreen').style.display = 'none';
             document.getElementById('initialScreen').style.display = 'block';
             document.getElementById('restartButton').onclick = resetGame;
             document.getElementById('startButton').onclick = startGame;
+            
+            // Leaderboard button event listeners
+            document.getElementById('viewLeaderboardButton').onclick = showLeaderboard;
+            document.getElementById('viewLeaderboardFromGameOver').onclick = showLeaderboard;
+            document.getElementById('closeLeaderboard').onclick = () => {
+                hideLeaderboard();
+                document.getElementById('initialScreen').style.display = 'block';
+            };
+            document.getElementById('playAgain').onclick = () => {
+                hideLeaderboard();
+                resetGame();
+            };
 
             // Add touch controls
             const leftButton = document.getElementById('leftButton');
