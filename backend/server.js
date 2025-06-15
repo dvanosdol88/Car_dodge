@@ -1,10 +1,15 @@
 const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+const { Pool } = require('pg');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
-const SCORES_FILE = path.join(__dirname, 'scores.json');
+const PORT = process.env.PORT || 3000;
+
+// PostgreSQL connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL || 'postgresql://dashboard_db_pj6n_user:VlwE3L1aio550wX9epVxEGp56fmIW7w5@dpg-d0t0gj15pdvs73d58c20-a.oregon-postgres.render.com/dashboard_db_pj6n',
+    ssl: { rejectUnauthorized: false }
+});
 
 // Middleware
 app.use(express.json());
@@ -22,34 +27,67 @@ app.use((req, res, next) => {
     }
 });
 
-// Initialize scores file if it doesn't exist
-async function initializeScoresFile() {
+// Initialize database table
+async function initializeDatabase() {
     try {
-        await fs.access(SCORES_FILE);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS scores (
+                id SERIAL PRIMARY KEY,
+                player_name VARCHAR(100) NOT NULL,
+                score INTEGER NOT NULL,
+                timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+                submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        // Create index on score for faster queries
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_scores_score ON scores(score DESC)
+        `);
+        
+        console.log('Database table initialized');
     } catch (error) {
-        // File doesn't exist, create it with an empty array
-        await fs.writeFile(SCORES_FILE, JSON.stringify([], null, 2));
-        console.log('Created scores.json file');
+        console.error('Error initializing database:', error);
+        throw error;
     }
 }
 
-// Read scores from file
-async function readScores() {
+// Read scores from database
+async function readScores(limit = 100) {
     try {
-        const data = await fs.readFile(SCORES_FILE, 'utf8');
-        return JSON.parse(data);
+        const result = await pool.query(
+            'SELECT * FROM scores ORDER BY score DESC LIMIT $1',
+            [limit]
+        );
+        return result.rows.map(row => ({
+            id: row.id.toString(),
+            playerName: row.player_name,
+            score: row.score,
+            timestamp: row.timestamp,
+            submittedAt: row.submitted_at
+        }));
     } catch (error) {
         console.error('Error reading scores:', error);
         return [];
     }
 }
 
-// Write scores to file
-async function writeScores(scores) {
+// Write score to database
+async function writeScore(scoreData) {
     try {
-        await fs.writeFile(SCORES_FILE, JSON.stringify(scores, null, 2));
+        const result = await pool.query(
+            'INSERT INTO scores (player_name, score, timestamp) VALUES ($1, $2, $3) RETURNING *',
+            [scoreData.playerName, scoreData.score, scoreData.timestamp]
+        );
+        return {
+            id: result.rows[0].id.toString(),
+            playerName: result.rows[0].player_name,
+            score: result.rows[0].score,
+            timestamp: result.rows[0].timestamp,
+            submittedAt: result.rows[0].submitted_at
+        };
     } catch (error) {
-        console.error('Error writing scores:', error);
+        console.error('Error writing score:', error);
         throw error;
     }
 }
@@ -72,26 +110,19 @@ app.post('/score', async (req, res) => {
             });
         }
 
-        // Read existing scores
-        const scores = await readScores();
-
-        // Add new score
-        const newScore = {
-            id: Date.now().toString(),
+        // Save score to database
+        const newScore = await writeScore({
             playerName: playerName.trim(),
             score: parseInt(score),
-            timestamp: timestamp,
-            submittedAt: new Date().toISOString()
-        };
+            timestamp: timestamp
+        });
 
-        scores.push(newScore);
-
-        // Sort by score (highest first) and keep top 100
-        scores.sort((a, b) => b.score - a.score);
-        const topScores = scores.slice(0, 100);
-
-        // Write back to file
-        await writeScores(topScores);
+        // Get rank by counting scores higher than this one
+        const rankResult = await pool.query(
+            'SELECT COUNT(*) + 1 as rank FROM scores WHERE score > $1',
+            [newScore.score]
+        );
+        const rank = parseInt(rankResult.rows[0].rank);
 
         console.log(`New score submitted: ${playerName} - ${score}`);
 
@@ -99,7 +130,7 @@ app.post('/score', async (req, res) => {
             success: true,
             message: 'Score saved successfully',
             scoreData: newScore,
-            rank: topScores.findIndex(s => s.id === newScore.id) + 1
+            rank: rank
         });
 
     } catch (error) {
@@ -139,7 +170,7 @@ app.get('/health', (req, res) => {
 // Start server
 async function startServer() {
     try {
-        await initializeScoresFile();
+        await initializeDatabase();
         
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
