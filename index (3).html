@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Dodge Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            overflow: hidden; /* Prevent scroll bars due to canvas sizing */
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            background-color: #a3d9ff; /* Sky blue background */
+            display: block;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            width: 80vw; /* Responsive width */
+            height: 90vh; /* Responsive height */
+            max-width: 600px; /* Max width for desktop */
+            max-height: 800px; /* Max height for desktop */
+        }
+
+        #gameStatus {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        #gameOverScreen, #initialScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 10;
+        }
+
+        #gameOverScreen h2, #initialScreen h2 {
+            color: #e74c3c;
+            margin-bottom: 20px;
+            font-size: 2.2em;
+        }
+
+        #initialScreen h2 {
+            color: #2c3e50;
+        }
+
+        #gameOverScreen p, #initialScreen p {
+            font-size: 1.4em;
+            margin-bottom: 25px;
+            color: #555;
+        }
+
+        #gameOverScreen button, #initialScreen button {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        #gameOverScreen button:hover, #initialScreen button:hover {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Mobile controls container */
+        #mobileControls {
+            display: flex;
+            justify-content: space-around;
+            width: 80vw;
+            max-width: 600px;
+            margin-top: 20px;
+            gap: 10px; /* Space between buttons */
+        }
+
+        .control-button {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            flex-grow: 1; /* Make buttons expand to fill space */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            display: none; /* Hidden by default, shown via JS on touch devices */
+        }
+        .control-button.shoot-button {
+            background: linear-gradient(145deg, #e74c3c, #c0392b); /* Reddish for shoot */
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            canvas {
+                width: 95vw;
+                height: 70vh;
+            }
+            #mobileControls {
+                display: flex; /* Show controls on smaller screens */
+            }
+            .control-button {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Car Dodge</h1>
+    <canvas id="gameCanvas"></canvas>
+    <div id="gameStatus"></div>
+
+    <div id="initialScreen">
+        <h2>Welcome to Car Dodge!</h2>
+        <p>Dodge other cars, oil slicks, and tank missiles.<br>Use ◀ and ▶ to move, Spacebar to shoot.</p>
+        <button id="startButton">Start Game</button>
+    </div>
+
+    <div id="gameOverScreen" style="display:none;">
+        <h2>Game Over!</h2>
+        <p>Score: <span id="finalScore">0</span></p>
+        <button id="restartButton">Restart Game</button>
+    </div>
+
+    <div id="mobileControls">
+        <button id="leftButton" class="control-button">◀</button>
+        <button id="shootButton" class="control-button shoot-button">🔥</button>
+        <button id="rightButton" class="control-button">▶</button>
+    </div>
+
+    <script>
+        // Game variables
+        let canvas, ctx;
+        let playerCar;
+        let obstacles = []; // Includes cars, motorcycles, oil slicks, tanks
+        let trees = [];
+        let playerProjectiles = []; // New: Player's fired projectiles
+        let tankMissiles = []; // New: Missiles fired by tanks
+        let explosions = []; // New: For tank explosions
+        let bonusTexts = []; // New: For "100 Bonus Points!" messages
+
+        let score = 0;
+        let gameSpeed = 5; // Pixels per frame
+        let gameOver = false;
+        let roadCurveOffset = 0; // Current horizontal offset for road curves
+        let curveDirection = 1; // 1 for right, -1 for left
+        let playerSpeed = 8; // Player car movement speed
+        let animationFrameId; // To store requestAnimationFrame ID for cancellation
+
+        // Tone.js variables for music and sound effects
+        let backgroundMusic;
+        let oilSlickSound;
+        let crashSound;
+        let playerShootSound; // New: Player shooting sound
+        let tankExplosionSound; // New: Tank explosion sound
+        let tankFireSound; // New: Tank firing sound
+
+        // Spinning effect variables (for oil slick)
+        let spinningActive = false;
+        let spinDuration = 2000; // milliseconds
+        let spinStartTime = 0;
+        const SPIN_COUNT = 4; // Number of full 360 degree spins
+
+        // Shooting variables
+        let canShoot = true;
+        let shotCooldown = 300; // milliseconds
+        let lastShotTime = 0;
+
+        // Constants
+        const LANE_WIDTH = 100;
+        const ROAD_WIDTH = LANE_WIDTH * 3; // 3 lanes
+        const MAX_OBSTACLES = 5;
+        const TREE_COUNT = 15; // More trees for better visual density
+        const CURVE_STRENGTH = 0.0008; // How much the road curves per frame (gentle curve)
+        const MAX_CURVE_OFFSET = 150; // Max horizontal shift for the road
+        const TANK_FIRE_CHANCE = 0.005; // Chance per frame for a tank to fire
+        const TANK_FIRE_COOLDOWN = 1500; // Min time between tank shots
+
+        // Function declarations moved to the top for hoisting safety
+        /**
+         * Draws a filled rectangle on the canvas.
+         * @param {number} x - The x-coordinate of the top-left corner.
+         * @param {number} y - The y-coordinate of the top-left corner.
+         * @param {number} width - The width of the rectangle.
+         * @param {number} height - The height of the rectangle.
+         * @param {string} color - The fill color of the rectangle.
+         */
+        function drawRect(x, y, width, height, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        /**
+         * Draws the player's stylized blue car, applying rotation if spinning.
+         */
+        function drawPlayerCar() {
+            ctx.save();
+            ctx.translate(playerCar.x + playerCar.width / 2, playerCar.y + playerCar.height / 2);
+            ctx.rotate(playerCar.rotation);
+            ctx.translate(-(playerCar.x + playerCar.width / 2), -(playerCar.y + playerCar.height / 2));
+
+            ctx.fillStyle = playerCar.color; // Main body color
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            // Car body (more defined shape)
+            ctx.beginPath();
+            ctx.moveTo(playerCar.x + playerCar.width * 0.1, playerCar.y + playerCar.height); // Bottom left
+            ctx.lineTo(playerCar.x, playerCar.y + playerCar.height * 0.7); // Mid-bottom left
+            ctx.lineTo(playerCar.x, playerCar.y + playerCar.height * 0.3); // Mid-top left
+            ctx.lineTo(playerCar.x + playerCar.width * 0.1, playerCar.y); // Top left
+            ctx.lineTo(playerCar.x + playerCar.width * 0.9, playerCar.y); // Top right
+            ctx.lineTo(playerCar.x + playerCar.width, playerCar.y + playerCar.height * 0.3); // Mid-top right
+            ctx.lineTo(playerCar.x + playerCar.width, playerCar.y + playerCar.height * 0.7); // Mid-bottom right
+            ctx.lineTo(playerCar.x + playerCar.width * 0.9, playerCar.y + playerCar.height); // Bottom right
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Windshield
+            ctx.fillStyle = 'lightblue';
+            ctx.beginPath();
+            ctx.moveTo(playerCar.x + playerCar.width * 0.2, playerCar.y + playerCar.height * 0.15);
+            ctx.lineTo(playerCar.x + playerCar.width * 0.8, playerCar.y + playerCar.height * 0.15);
+            ctx.lineTo(playerCar.x + playerCar.width * 0.75, playerCar.y + playerCar.height * 0.3);
+            ctx.lineTo(playerCar.x + playerCar.width * 0.25, playerCar.y + playerCar.height * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Wheels
+            ctx.fillStyle = 'black';
+            const wheelWidth = playerCar.width * 0.2;
+            const wheelHeight = playerCar.height * 0.15;
+            // Front left
+            ctx.fillRect(playerCar.x - wheelWidth / 2, playerCar.y + playerCar.height * 0.1, wheelWidth, wheelHeight);
+            // Front right
+            ctx.fillRect(playerCar.x + playerCar.width - wheelWidth / 2, playerCar.y + playerCar.height * 0.1, wheelWidth, wheelHeight);
+            // Rear left
+            ctx.fillRect(playerCar.x - wheelWidth / 2, playerCar.y + playerCar.height * 0.75, wheelWidth, wheelHeight);
+            // Rear right
+            ctx.fillRect(playerCar.x + playerCar.width - wheelWidth / 2, playerCar.y + playerCar.height * 0.75, wheelWidth, wheelHeight);
+
+            ctx.restore();
+        }
+
+        /**
+         * Draws the road with its lanes and accounts for the road curvature.
+         */
+        function drawRoad() {
+            const roadCenterX = canvas.width / 2 + roadCurveOffset;
+            const roadX = roadCenterX - ROAD_WIDTH / 2;
+
+            drawRect(roadX, 0, ROAD_WIDTH, canvas.height, '#555');
+
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 5;
+            ctx.setLineDash([30, 30]);
+
+            ctx.beginPath();
+            ctx.moveTo(roadX + LANE_WIDTH, 0);
+            ctx.lineTo(roadX + LANE_WIDTH, canvas.height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(roadX + 2 * LANE_WIDTH, 0);
+            ctx.lineTo(roadX + 2 * LANE_WIDTH, canvas.height);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+        }
+
+        /**
+         * Draws all obstacles (cars, motorcycles, oil slicks, tanks) on the canvas.
+         */
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                const adjustedObstacleX = obstacle.x + roadCurveOffset;
+
+                if (obstacle.type === 'car') {
+                    // Stylized car
+                    ctx.fillStyle = obstacle.color;
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    // Using roundRect for a more consistent look with player car
+                    if (ctx.roundRect) { // Check for roundRect support
+                         ctx.roundRect(adjustedObstacleX, obstacle.y, obstacle.width, obstacle.height, 5);
+                    } else { // Fallback for older browsers
+                        ctx.rect(adjustedObstacleX, obstacle.y, obstacle.width, obstacle.height);
+                    }
+                    ctx.fill();
+                    ctx.stroke();
+                    // Wheels
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(adjustedObstacleX + 2, obstacle.y + obstacle.height - 10, obstacle.width / 4, 8);
+                    ctx.fillRect(adjustedObstacleX + obstacle.width - obstacle.width / 4 - 2, obstacle.y + obstacle.height - 10, obstacle.width / 4, 8);
+                    ctx.fillRect(adjustedObstacleX + 2, obstacle.y + 2, obstacle.width / 4, 8);
+                    ctx.fillRect(adjustedObstacleX + obstacle.width - obstacle.width / 4 - 2, obstacle.y + 2, obstacle.width / 4, 8);
+
+                } else if (obstacle.type === 'motorcycle') {
+                    // Stylized motorcycle
+                    ctx.fillStyle = obstacle.color;
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2, obstacle.width / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Handlebars
+                    ctx.beginPath();
+                    ctx.moveTo(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height * 0.2);
+                    ctx.lineTo(adjustedObstacleX + obstacle.width * 0.1, obstacle.y + obstacle.height * 0.1);
+                    ctx.moveTo(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height * 0.2);
+                    ctx.lineTo(adjustedObstacleX + obstacle.width * 0.9, obstacle.y + obstacle.height * 0.1);
+                    ctx.stroke();
+                    // Wheels
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(adjustedObstacleX + obstacle.width * 0.25, obstacle.y + obstacle.height * 0.85, obstacle.width * 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(adjustedObstacleX + obstacle.width * 0.75, obstacle.y + obstacle.height * 0.85, obstacle.width * 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                } else if (obstacle.type === 'oilSlick') {
+                    ctx.fillStyle = '#1a1a1a'; // Very dark grey/black
+                    ctx.beginPath();
+                    ctx.ellipse(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2,
+                                obstacle.width / 2, obstacle.height / 2, Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#333';
+                    ctx.beginPath();
+                    ctx.ellipse(adjustedObstacleX + obstacle.width * 0.4, obstacle.y + obstacle.height * 0.4,
+                                obstacle.width * 0.2, obstacle.height * 0.2, -Math.PI / 6, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (obstacle.type === 'tank') {
+                    // Stylized Tank
+                    ctx.fillStyle = obstacle.color; // Tank body color
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 2;
+
+                    // Tank body
+                    ctx.beginPath();
+                    if (ctx.roundRect) { // Check for roundRect support
+                        ctx.roundRect(adjustedObstacleX, obstacle.y + obstacle.height * 0.3, obstacle.width, obstacle.height * 0.7, 8); // Main body
+                    } else { // Fallback for older browsers
+                        ctx.rect(adjustedObstacleX, obstacle.y + obstacle.height * 0.3, obstacle.width, obstacle.height * 0.7);
+                    }
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Turret
+                    ctx.beginPath();
+                    ctx.arc(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height * 0.35, obstacle.width * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Barrel
+                    ctx.fillStyle = '#444';
+                    ctx.fillRect(adjustedObstacleX + obstacle.width / 2 - 5, obstacle.y - 10, 10, obstacle.height * 0.45); // Barrel
+                }
+            });
+        }
+
+        /**
+         * Draws all trees on the sides of the road.
+         */
+        function drawTrees() {
+            trees.forEach(tree => {
+                const adjustedTreeX = tree.x + roadCurveOffset;
+                drawRect(adjustedTreeX, tree.y, tree.width, tree.height * 0.3, 'brown');
+                ctx.fillStyle = 'green';
+                ctx.beginPath();
+                ctx.arc(adjustedTreeX + tree.width / 2, tree.y + tree.height * 0.3, tree.width * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        /**
+         * Draws player's projectiles.
+         */
+        function drawPlayerProjectiles() {
+            playerProjectiles.forEach(proj => {
+                drawRect(proj.x, proj.y, proj.width, proj.height, proj.color);
+            });
+        }
+
+        /**
+         * Draws tank missiles.
+         */
+        function drawTankMissiles() {
+            tankMissiles.forEach(missile => {
+                drawRect(missile.x, missile.y, missile.width, missile.height, missile.color);
+            });
+        }
+
+        /**
+         * Draws explosions.
+         */
+        function drawExplosions() {
+            explosions.forEach(exp => {
+                ctx.globalAlpha = exp.alpha;
+                ctx.fillStyle = `rgb(255, ${200 - exp.radius}, 0)`; // Yellow to orange fade
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1; // Reset alpha
+            });
+        }
+
+        /**
+         * Draws bonus point texts.
+         */
+        function drawBonusTexts() {
+            bonusTexts.forEach(bonus => {
+                ctx.globalAlpha = bonus.alpha;
+                ctx.fillStyle = bonus.color;
+                ctx.font = `${bonus.size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText(bonus.text, bonus.x, bonus.y);
+                ctx.globalAlpha = 1; // Reset alpha
+            });
+        }
+
+        /**
+         * Displays the current score on the canvas.
+         */
+        function drawScore() {
+            ctx.fillStyle = 'black';
+            ctx.font = '24px Arial';
+            ctx.fillText('Score: ' + score, 10, 30);
+        }
+
+        /**
+         * Generates a new obstacle (car, motorcycle, oil slick, or tank) at a random lane.
+         * @param {boolean} isInitial - True if called during initial game setup.
+         */
+        function generateObstacle(isInitial) {
+            const types = ['car', 'motorcycle', 'oilSlick', 'tank'];
+            const type = types[Math.floor(Math.random() * types.length)]; // Randomly select type
+            let obstacle;
+
+            const lane = Math.floor(Math.random() * 3);
+            const initialRoadX = canvas.width / 2 - ROAD_WIDTH / 2;
+            const xPosInLane = initialRoadX + (lane * LANE_WIDTH) + (LANE_WIDTH / 2);
+
+            let startY;
+            if (isInitial) {
+                // Ensure initial obstacles start fully off-screen above
+                const tempHeight = (type === 'car' ? 90 : (type === 'motorcycle' ? 70 : (type === 'oilSlick' ? 40 : 120)));
+                startY = -tempHeight - (Math.random() * canvas.height * 0.5); // Start above canvas with some randomness
+            } else {
+                startY = -150 - Math.random() * 300; // Normal spawning for new obstacles
+            }
+
+            if (type === 'car') {
+                const colors = ['red', 'green', 'yellow', 'purple', 'darkblue', 'orange'];
+                obstacle = {
+                    x: xPosInLane - 30,
+                    y: startY,
+                    width: 60,
+                    height: 90,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    type: 'car'
+                };
+            } else if (type === 'motorcycle') {
+                const colors = ['orange', 'cyan', 'magenta', 'grey'];
+                obstacle = {
+                    x: xPosInLane - 20,
+                    y: startY,
+                    width: 40,
+                    height: 70,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    type: 'motorcycle'
+                };
+            } else if (type === 'oilSlick') {
+                obstacle = {
+                    x: xPosInLane - 35,
+                    y: startY,
+                    width: 70,
+                    height: 40,
+                    type: 'oilSlick'
+                };
+            } else if (type === 'tank') {
+                obstacle = {
+                    x: xPosInLane - 45, // Tanks are wider
+                    y: startY,
+                    width: 90,
+                    height: 120, // Tanks are taller
+                    color: 'darkgreen',
+                    type: 'tank',
+                    lastFireTime: 0 // To control tank's firing rate
+                };
+            }
+            obstacles.push(obstacle);
+        }
+
+        /**
+         * Generates a new tree on either the left or right side of the road.
+         * @param {boolean} isInitial - True if called during initial game setup.
+         */
+        function generateTree(isInitial) {
+            const side = Math.random() < 0.5 ? 'left' : 'right';
+            let xPos;
+            const treeWidth = 40 + Math.random() * 20;
+            const treeHeight = 100 + Math.random() * 50;
+
+            const initialRoadX = canvas.width / 2 - ROAD_WIDTH / 2;
+
+            if (side === 'left') {
+                xPos = initialRoadX - (80 + Math.random() * 100) - treeWidth / 2;
+            } else {
+                xPos = initialRoadX + ROAD_WIDTH + (60 + Math.random() * 100) - treeWidth / 2;
+            }
+
+            let startY;
+            if (isInitial) {
+                // Ensure initial trees start fully off-screen above
+                startY = -treeHeight - (Math.random() * canvas.height * 0.5); // Start above canvas with some randomness
+            } else {
+                startY = -Math.random() * canvas.height; // Normal spawning for new trees
+            }
+
+            trees.push({
+                x: xPos,
+                y: startY,
+                width: treeWidth,
+                height: treeHeight,
+                type: 'tree'
+            });
+        }
+
+        /**
+         * Creates a projectile fired by the player.
+         */
+        function createPlayerProjectile() {
+            if (spinningActive || !canShoot) return; // Cannot shoot while spinning or on cooldown
+
+            const now = Date.now();
+            if (now - lastShotTime < shotCooldown) {
+                return; // Still on cooldown
+            }
+
+            const projectile = {
+                x: playerCar.x + playerCar.width / 2 - 5, // Center projectile
+                y: playerCar.y - 20, // Slightly above car
+                width: 10,
+                height: 20,
+                color: 'white',
+                speed: 15
+            };
+            playerProjectiles.push(projectile);
+            playerShootSound.triggerAttackRelease("C5", "16n"); // Play player shoot sound
+            lastShotTime = now;
+        }
+
+        /**
+         * Creates a missile fired by a tank.
+         * @param {number} x - The x-coordinate of the missile's origin.
+         * @param {number} y - The y-coordinate of the missile's origin.
+         */
+        function createTankMissile(x, y) {
+            const missile = {
+                x: x - 5, // Center missile
+                y: y,
+                width: 10,
+                height: 25,
+                color: 'red',
+                speed: gameSpeed + 5 // Missile speed relative to game speed
+            };
+            tankMissiles.push(missile);
+        }
+
+        /**
+         * Creates an explosion effect.
+         * @param {number} x - The x-coordinate of the explosion.
+         * @param {number} y - The y-coordinate of the explosion.
+         */
+        function createExplosion(x, y) {
+            explosions.push({
+                x: x,
+                y: y,
+                radius: 5,
+                alpha: 1,
+                startTime: Date.now()
+            });
+            tankExplosionSound.triggerAttackRelease("4n"); // Play explosion sound
+        }
+
+        /**
+         * Creates a bonus point text display.
+         * @param {number} x - The x-coordinate of the text.
+         * @param {number} y - The y-coordinate of the text.
+         * @param {string} text - The text to display.
+         * @param {string} color - The color of the text.
+         */
+        function createBonusText(x, y, text, color = 'gold') {
+            bonusTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                alpha: 1,
+                size: 20,
+                color: color
+            });
+        }
+
+        /**
+         * Checks for collisions between various game elements.
+         */
+        function checkCollisions() {
+            // Player Car vs Obstacles (cars, motorcycles, oil slicks, tanks)
+            obstacles.forEach((obstacle, obstacleIndex) => {
+                const adjustedObstacleX = obstacle.x + roadCurveOffset;
+
+                if (
+                    playerCar.x < adjustedObstacleX + obstacle.width &&
+                    playerCar.x + playerCar.width > adjustedObstacleX &&
+                    playerCar.y < obstacle.y + obstacle.height &&
+                    playerCar.y + playerCar.height > obstacle.y
+                ) {
+                    if (obstacle.type === 'oilSlick') {
+                        if (!spinningActive) {
+                            spinningActive = true;
+                            spinStartTime = Date.now();
+                            oilSlickSound.triggerAttackRelease("8n");
+                            obstacles.splice(obstacleIndex, 1); // Remove slick after hit
+                        }
+                    } else if (obstacle.type === 'car' || obstacle.type === 'motorcycle' || obstacle.type === 'tank') {
+                        gameOver = true;
+                        crashSound.triggerAttackRelease("4n");
+                        document.getElementById('finalScore').innerText = score;
+                        document.getElementById('gameOverScreen').style.display = 'block';
+                        Tone.Transport.stop();
+                        // No need to cancelAnimationFrame here, animate() will handle it
+                    }
+                }
+            });
+
+            // Player Projectile vs Tanks
+            // Iterate backwards to safely remove elements during iteration
+            for (let i = playerProjectiles.length - 1; i >= 0; i--) {
+                const proj = playerProjectiles[i];
+                let hitTank = false; // Flag to check if projectile hit a tank
+
+                for (let j = obstacles.length - 1; j >= 0; j--) {
+                    const obstacle = obstacles[j];
+
+                    if (obstacle.type === 'tank') {
+                        const adjustedObstacleX = obstacle.x + roadCurveOffset;
+                        if (
+                            proj.x < adjustedObstacleX + obstacle.width &&
+                            proj.x + proj.width > adjustedObstacleX &&
+                            proj.y < obstacle.y + obstacle.height &&
+                            proj.y + proj.height > obstacle.y
+                        ) {
+                            // Collision: Projectile hit tank!
+                            obstacles.splice(j, 1); // Remove tank
+                            createExplosion(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2); // Create explosion
+                            score += 100; // Add bonus points
+                            createBonusText(adjustedObstacleX + obstacle.width / 2, obstacle.y, "100 Bonus Points!");
+                            hitTank = true;
+                            break; // Stop checking this projectile against other obstacles
+                        }
+                    }
+                }
+                if (hitTank) {
+                    playerProjectiles.splice(i, 1); // Remove projectile if it hit a tank
+                }
+            }
+
+
+            // Player Car vs Tank Missiles
+            for (let i = tankMissiles.length - 1; i >= 0; i--) {
+                const missile = tankMissiles[i];
+                // Tank missiles are already in world coordinates, no roadCurveOffset needed for them relative to player
+                if (
+                    playerCar.x < missile.x + missile.width &&
+                    playerCar.x + playerCar.width > missile.x &&
+                    playerCar.y < missile.y + missile.height &&
+                    playerCar.y + playerCar.height > missile.y
+                ) {
+                    // Collision: Player hit by tank missile!
+                    gameOver = true;
+                    crashSound.triggerAttackRelease("4n");
+                    document.getElementById('finalScore').innerText = score;
+                    document.getElementById('gameOverScreen').style.display = 'block';
+                    Tone.Transport.stop();
+                    // No need to cancelAnimationFrame here, animate() will handle it
+                    return; // End game, no further checks needed
+                }
+            }
+        }
+
+        /**
+         * The main game loop that clears, draws, and updates the game state.
+         */
+        function animate() {
+            // console.log("Animate frame running. Game Over:", gameOver); // Debug log
+            try {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                drawRoad();
+                drawTrees();
+
+                // Only update and draw moving elements if game is not over
+                if (!gameOver) {
+                    update(); // Update game state
+                    drawObstacles(); // Draws cars, motorcycles, oil slicks, tanks
+                    drawTankMissiles(); // Draw tank missiles on top of obstacles
+                    drawPlayerCar();
+                    drawPlayerProjectiles(); // Draw player projectiles on top of player car
+                    drawExplosions(); // Draw explosions on top of everything
+                    drawBonusTexts(); // Draw bonus texts on top
+                    drawScore();
+                } else {
+                    // If game is over, ensure final state is drawn (e.g., game over screen remains)
+                    // The elements won't move, but the last frame before game over will persist
+                    drawObstacles();
+                    drawTankMissiles();
+                    drawPlayerCar();
+                    drawPlayerProjectiles();
+                    drawExplosions();
+                    drawBonusTexts();
+                    drawScore();
+                }
+
+            } catch (e) {
+                console.error("Error in animate function:", e);
+                // No need to set gameOver = true here, as game over is handled by collisions.
+                // However, we should stop the animation loop if a critical rendering error occurs.
+                // For simplicity, we'll let it try to recover or user restarts.
+            } finally {
+                // ALWAYS request the next frame to keep the animation loop running
+                animationFrameId = requestAnimationFrame(animate);
+            }
+        }
+
+        // Keyboard input handling
+        let keys = {};
+        document.addEventListener('keydown', e => {
+            // Prevent default arrow key scrolling
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+            }
+            keys[e.key] = true;
+            if (e.key === ' ') { // Spacebar for shooting
+                createPlayerProjectile();
+            }
+        });
+
+        document.addEventListener('keyup', e => {
+            keys[e.key] = false;
+        });
+
+        /**
+         * Handles player car movement based on pressed arrow keys or touch buttons,
+         * ensuring the car stays within the curving road boundaries.
+         */
+        function handlePlayerMovement() {
+            if (spinningActive) return; // Prevent movement while spinning
+
+            // Calculate current road boundaries based on roadCurveOffset
+            // Player car should stay within the visible road boundaries considering the curve
+            const minX = (canvas.width / 2 - ROAD_WIDTH / 2) + roadCurveOffset;
+            const maxX = (canvas.width / 2 + ROAD_WIDTH / 2) + roadCurveOffset - playerCar.width;
+
+            if (keys['ArrowLeft']) {
+                playerCar.x = Math.max(playerCar.x - playerSpeed, minX);
+            }
+            if (keys['ArrowRight']) {
+                playerCar.x = Math.min(playerCar.x + playerSpeed, maxX);
+            }
+        }
+
+        /**
+         * Resets the game state and starts a new game.
+         */
+        function resetGame() {
+            cancelAnimationFrame(animationFrameId); // Stop any lingering loops
+            gameOver = false;
+            obstacles = [];
+            trees = [];
+            playerProjectiles = [];
+            tankMissiles = [];
+            explosions = [];
+            bonusTexts = [];
+            score = 0;
+            gameSpeed = 5;
+            roadCurveOffset = 0;
+            curveDirection = 1;
+            playerCar.rotation = 0; // Ensure rotation is reset
+            spinningActive = false; // Ensure spinning is reset
+            canShoot = true;
+            lastShotTime = 0;
+
+            // Re-initialize to respawn trees, obstacles, etc.
+            // This is crucial to get a fresh set of game elements.
+            for (let i = 0; i < TREE_COUNT; i++) {
+                generateTree(true);
+            }
+            for (let i = 0; i < MAX_OBSTACLES; i++) {
+                generateObstacle(true);
+            }
+
+            document.getElementById('gameOverScreen').style.display = 'none';
+            // Resume music if it was stopped
+            Tone.Transport.start();
+            // Start animation loop again explicitly (though the unconditional requestAnimationFrame helps)
+            animate(); // Ensure animate is called to restart the loop
+        }
+
+        // Sets up Tone.js synths and sequences
+        function setupAudio() {
+            // Create the synth first
+            const backgroundMusicSynth = new Tone.FMSynth().toDestination();
+            
+            // Spy Music (simple FM synth sequence)
+            backgroundMusic = new Tone.Sequence((time, note) => {
+                backgroundMusicSynth.triggerAttackRelease(note, "8n", time);
+            }, ["C4", "E4", "F4", "C4", "C4", "E4", "G4", "F4"]).start(0);
+            backgroundMusicSynth.envelope.attack = 0.01;
+            backgroundMusicSynth.envelope.decay = 0.2;
+            backgroundMusicSynth.envelope.sustain = 0.1;
+            backgroundMusicSynth.envelope.release = 0.5;
+
+            Tone.Transport.bpm.value = 120; // Adjust BPM if needed
+            Tone.Transport.loop = true;
+            Tone.Transport.loopEnd = "2m"; // Loop every 2 measures
+
+            // Oil Slick Sound (chaotic noise burst)
+            oilSlickSound = new Tone.NoiseSynth({
+                noise: {
+                    type: "pink"
+                },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.1,
+                    sustain: 0,
+                    release: 0.1
+                }
+            }).toDestination();
+
+            // Crash Sound (more aggressive noise burst)
+            crashSound = new Tone.NoiseSynth({
+                noise: {
+                    type: "brown"
+                },
+                envelope: {
+                    attack: 0.01,
+                    decay: 0.2,
+                    sustain: 0.1,
+                    release: 0.3
+                }
+            }).toDestination();
+
+            // Player Shoot Sound
+            playerShootSound = new Tone.Synth({
+                oscillator: {
+                    type: "triangle"
+                },
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.05,
+                    sustain: 0.01,
+                    release: 0.05
+                }
+            }).toDestination();
+
+            // Tank Fire Sound (more bassy and impactful)
+            tankFireSound = new Tone.MembraneSynth({
+                pitchDecay: 0.05,
+                octaves: 10,
+                oscillator: {
+                    type: "sine"
+                },
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.4,
+                    sustain: 0.01,
+                    release: 0.4,
+                    attackCurve: "exponential"
+                }
+            }).toDestination();
+
+
+            // Tank Explosion Sound (complex noise)
+            tankExplosionSound = new Tone.NoiseSynth({
+                noise: {
+                    type: "white" // White noise for a sharper explosion
+                },
+                envelope: {
+                    attack: 0.01,
+                    decay: 0.5,
+                    sustain: 0,
+                    release: 0.5
+                }
+            }).toDestination();
+        }
+
+        // Function to start the game after initial screen click
+        async function startGame() { // Made async
+            console.log("Starting game..."); // Debug log
+            document.getElementById('initialScreen').style.display = 'none';
+            try {
+                await Tone.start();
+                console.log("Tone.js started."); // Debug log
+                Tone.Transport.start();
+                console.log("Tone.Transport started. Initiating animation loop."); // Debug log
+                animate(); // This starts the loop
+            } catch (e) {
+                console.error("Failed to start Tone.js or game:", e);
+                // Optionally show an error message to the user
+            }
+        }
+
+        // Canvas resizing
+        function resizeCanvas() {
+            const parentWidth = window.innerWidth;
+            const parentHeight = window.innerHeight;
+
+            canvas.width = Math.min(parentWidth * 0.8, 600);
+            canvas.height = Math.min(parentHeight * 0.9, 800);
+
+            playerCar.x = canvas.width / 2 - playerCar.width / 2;
+            playerCar.y = canvas.height - 100;
+        }
+
+
+        // Game setup - this is the main entry point after functions are defined
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            playerCar = {
+                x: 0,
+                y: 0,
+                width: 50,
+                height: 80,
+                color: 'blue',
+                rotation: 0
+            };
+
+            resizeCanvas(); // Make canvas responsive
+            window.addEventListener('resize', resizeCanvas);
+
+            obstacles = [];
+            trees = [];
+            playerProjectiles = [];
+            tankMissiles = [];
+            explosions = [];
+            bonusTexts = [];
+            score = 0;
+            gameSpeed = 5; // Reset speed
+            gameOver = false;
+            roadCurveOffset = 0;
+            curveDirection = 1;
+            spinningActive = false; // Reset spinning state
+            canShoot = true; // Reset shooting ability
+
+            // Generate initial trees
+            for (let i = 0; i < TREE_COUNT; i++) {
+                generateTree(true);
+            }
+
+            // Generate initial obstacles
+            for (let i = 0; i < MAX_OBSTACLES; i++) {
+                generateObstacle(true);
+            }
+
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('initialScreen').style.display = 'block';
+            document.getElementById('restartButton').onclick = resetGame;
+            document.getElementById('startButton').onclick = startGame;
+
+            // Add touch controls
+            const leftButton = document.getElementById('leftButton');
+            const rightButton = document.getElementById('rightButton');
+            const shootButton = document.getElementById('shootButton'); // New shoot button
+
+            // Using touchstart/touchend for mobile and mousedown/mouseup for desktop clicks on buttons
+            // e.preventDefault() is crucial for touch to stop default browser behavior like scrolling/zooming
+            leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; }, { passive: false });
+            leftButton.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
+            leftButton.addEventListener('mousedown', (e) => { keys['ArrowLeft'] = true; });
+            leftButton.addEventListener('mouseup', (e) => { keys['ArrowLeft'] = false; });
+
+            rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; }, { passive: false });
+            rightButton.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+            rightButton.addEventListener('mousedown', (e) => { keys['ArrowRight'] = true; });
+            rightButton.addEventListener('mouseup', (e) => { keys['ArrowRight'] = false; });
+
+            // Shoot button events
+            shootButton.addEventListener('touchstart', (e) => { e.preventDefault(); createPlayerProjectile(); }, { passive: false });
+            shootButton.addEventListener('mousedown', (e) => { createPlayerProjectile(); });
+
+
+            // Initialize Tone.js instruments
+            setupAudio();
+        }
+
+
+        // Start the game initialization when the window has fully loaded
+        window.onload = function() {
+            initGame();
+        }
+    </script>
+</body>
+</html>
