@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 // PostgreSQL connection
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://dashboard_db_pj6n_user:VlwE3L1aio550wX9epVxEGp56fmIW7w5@dpg-d0t0gj15pdvs73d58c20-a.oregon-postgres.render.com/dashboard_db_pj6n',
+    connectionString: process.env.DATABASE_URL || 'postgresql://scores_db_z2az_user:0lGBD5U4FWxgGNBR7eAuUCfBFUs07hLv@dpg-d17h82umcj7s73d7ifsg-a.oregon-postgres.render.com/scores_db_z2az',
     ssl: { rejectUnauthorized: false }
 });
 
