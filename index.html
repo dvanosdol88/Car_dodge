@@ -1188,7 +1188,8 @@
                         playerName: playerName || 'Anonymous',
                         score: score,
                         timestamp: new Date().toISOString()
-                    })
+                    }),
+                    redirect: 'follow' // Follow redirects
                 });
 
                 if (!response.ok) {
@@ -1200,7 +1201,8 @@
                 return result;
             } catch (error) {
                 console.error('Failed to submit high score:', error);
-                // Optionally show user feedback
+                // Show user feedback for connection issues
+                console.warn('Leaderboard temporarily unavailable');
                 return null;
             }
         }
@@ -1211,7 +1213,9 @@
          */
         async function fetchHighScores(limit = 10) {
             try {
-                const response = await fetch(`https://dvo88.com/scores?limit=${limit}`);
+                const response = await fetch(`https://dvo88.com/scores?limit=${limit}`, {
+                    redirect: 'follow' // Follow redirects
+                });
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1221,6 +1225,7 @@
                 return result.scores || [];
             } catch (error) {
                 console.error('Failed to fetch high scores:', error);
+                console.warn('Leaderboard temporarily unavailable');
                 return [];
             }
         }
@@ -1921,7 +1926,18 @@
             };
             
             document.getElementById('contactSign').onclick = () => {
-                window.location.href = 'mailto:david@davidcfacfp.com';
+                // Try mailto first, fallback to opening contact page
+                try {
+                    window.location.href = 'mailto:david@davidcfacfp.com';
+                } catch (error) {
+                    // Fallback: open contact form or copy email to clipboard
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText('david@davidcfacfp.com');
+                        alert('Email address copied to clipboard: david@davidcfacfp.com');
+                    } else {
+                        alert('Contact David at: david@davidcfacfp.com');
+                    }
+                }
             };
 
             // Add touch controls
