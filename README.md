@@ -146,6 +146,7 @@ The game evolved through several phases:
 
 ## 🔄 Recent Updates
 
+- Added Claude Code Guide to CLAUDE.md for beginner-friendly development
 - Updated CLAUDE.md with README maintenance requirements
 - Enhanced traffic sign navigation with SVG icons
 - Improved score display with Rest Area styling
