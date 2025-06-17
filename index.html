@@ -1179,7 +1179,7 @@
          */
         async function sendHighScore(playerName, score) {
             try {
-                const response = await fetch('https://dvo88.com/score', {
+                const response = await fetch('https://car-dodge-backend.onrender.com/score', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1213,7 +1213,7 @@
          */
         async function fetchHighScores(limit = 10) {
             try {
-                const response = await fetch(`https://dvo88.com/scores?limit=${limit}`, {
+                const response = await fetch(`https://car-dodge-backend.onrender.com/scores?limit=${limit}`, {
                     redirect: 'follow' // Follow redirects
                 });
                 
