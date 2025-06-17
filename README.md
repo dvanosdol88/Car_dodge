@@ -146,6 +146,11 @@ The game evolved through several phases:
 
 ## 🔄 Recent Updates
 
+- **MUTCD-Authentic Highway Signs**: Researched and implemented official FHWA design standards
+  - Rest Area sign: Official Pantone 294 blue (#003f87) with FHWA Highway Gothic typography
+  - Exit signs: Official MUTCD highway green (#006A38) with proper letter spacing
+  - Speed Limit sign: Authentic Highway Gothic font family with FHWA weight standards
+  - All signs now use official MUTCD corner radii and design specifications
 - Enhanced score sign to look more like authentic rest area highway sign
 - Improved typography with Highway Gothic font family and letter spacing
 - Added parking icon and darker blue color for better authenticity
