@@ -146,6 +146,10 @@ The game evolved through several phases:
 
 ## 🔄 Recent Updates
 
+- Enhanced score sign to look more like authentic rest area highway sign
+- Improved typography with Highway Gothic font family and letter spacing
+- Added parking icon and darker blue color for better authenticity
+- Fixed game link in interactive resume to point to dvo88.com instead of game.dvo88.com
 - Added Claude Code Guide to CLAUDE.md for beginner-friendly development
 - Updated CLAUDE.md with README maintenance requirements
 - Enhanced traffic sign navigation with SVG icons
