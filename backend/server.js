@@ -14,13 +14,32 @@ const pool = new Pool({
 // Middleware
 app.use(express.json());
 
-// CORS middleware
+// Enhanced CORS middleware with logging
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    // Log incoming requests for debugging
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} from ${req.get('Origin') || 'unknown'}`);
+    
+    // Set CORS headers - specifically allow the game domain
+    const allowedOrigins = [
+        'https://www.dvo88.com',
+        'https://dvo88.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ];
+    
+    const origin = req.get('Origin');
+    if (allowedOrigins.includes(origin) || !origin) {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+    } else {
+        res.header('Access-Control-Allow-Origin', '*'); // Fallback to allow all
+    }
+    
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'false');
     
     if (req.method === 'OPTIONS') {
+        console.log('Responding to OPTIONS preflight request');
         res.sendStatus(200);
     } else {
         next();
@@ -165,6 +184,15 @@ app.get('/scores', async (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// CORS test endpoint
+app.get('/cors-test', (req, res) => {
+    res.json({ 
+        message: 'CORS is working!', 
+        origin: req.get('Origin') || 'no-origin',
+        timestamp: new Date().toISOString() 
+    });
 });
 
 // Start server
