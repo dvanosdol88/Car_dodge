@@ -1982,20 +1982,56 @@
                 window.open('https://davidcfacfp.com', '_blank');
             };
             
-            document.getElementById('contactSign').onclick = () => {
-                // Try mailto first, fallback to opening contact page
-                try {
-                    window.location.href = 'mailto:david@davidcfacfp.com';
-                } catch (error) {
-                    // Fallback: open contact form or copy email to clipboard
-                    if (navigator.clipboard) {
-                        navigator.clipboard.writeText('david@davidcfacfp.com');
-                        alert('Email address copied to clipboard: david@davidcfacfp.com');
-                    } else {
-                        alert('Contact David at: david@davidcfacfp.com');
+            document.getElementById('contactSign').onclick = async () => {
+                console.log('Contact button clicked');
+                
+                // Show user options instead of just trying mailto
+                const userChoice = confirm(
+                    "How would you like to contact David?\n\n" +
+                    "✉️ Click OK to open your email app\n" +
+                    "📋 Click Cancel to copy email to clipboard"
+                );
+                
+                if (userChoice) {
+                    // User chose to open email
+                    try {
+                        window.location.href = 'mailto:david@davidcfacfp.com';
+                        console.log('Attempted to open email client');
+                    } catch (error) {
+                        console.error('Failed to open email client:', error);
+                        // Fallback to copy
+                        await copyEmailToClipboard();
                     }
+                } else {
+                    // User chose to copy email
+                    await copyEmailToClipboard();
                 }
             };
+            
+            // Helper function to copy email to clipboard
+            async function copyEmailToClipboard() {
+                const email = 'david@davidcfacfp.com';
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(email);
+                        alert('✅ Email address copied to clipboard!\n\n' + email);
+                        console.log('Email copied to clipboard successfully');
+                    } else {
+                        // Fallback for older browsers
+                        const textArea = document.createElement('textarea');
+                        textArea.value = email;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        alert('✅ Email address copied to clipboard!\n\n' + email);
+                        console.log('Email copied using fallback method');
+                    }
+                } catch (error) {
+                    console.error('Failed to copy email:', error);
+                    alert('📧 Contact David at:\n\n' + email);
+                }
+            }
 
             // Add touch controls
             const leftButton = document.getElementById('leftButton');
