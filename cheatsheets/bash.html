@@ -167,6 +167,150 @@
         body.dark-mode .theme-toggle:hover {
             background: #2980b9;
         }
+        
+        /* Progress Tracking System */
+        .progress-controls {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .quiz-toggle {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .quiz-toggle:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+        .quiz-toggle.active {
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(39, 174, 96, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
+        }
+        .overall-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f39c12, #e74c3c, #27ae60);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        .command-progress {
+            width: 80px;
+            height: 4px;
+            background: #ecf0f1;
+            border-radius: 2px;
+            margin-left: 10px;
+            display: inline-block;
+            overflow: hidden;
+        }
+        .command-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .knowledge-level {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+        .level-beginner { background: #e74c3c; color: white; }
+        .level-learning { background: #f39c12; color: white; }
+        .level-proficient { background: #3498db; color: white; }
+        .level-expert { background: #27ae60; color: white; }
+        .section-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .achievement-badge {
+            display: inline-block;
+            background: #f1c40f;
+            color: #2c3e50;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .quiz-mode .command-cell {
+            position: relative;
+        }
+        .quiz-mode .copy-btn, .quiz-mode .learn-btn {
+            display: none;
+        }
+        .quiz-buttons {
+            display: none;
+        }
+        .quiz-mode .quiz-buttons {
+            display: inline-block;
+        }
+        .practice-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 8px;
+            transition: background 0.2s;
+        }
+        .practice-btn:hover {
+            background: #8e44ad;
+        }
+        .correct-btn {
+            background: #27ae60;
+            margin-left: 5px;
+        }
+        .wrong-btn {
+            background: #e74c3c;
+            margin-left: 3px;
+        }
+        /* Dark mode support for progress system */
+        body.dark-mode .command-progress {
+            background: #2c3e50;
+        }
+        body.dark-mode .knowledge-level {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -177,6 +321,37 @@
             <input type="text" class="search-box" placeholder="🔍 Search commands..." id="searchBox">
             <div class="search-stats" id="searchStats"></div>
             <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">🌙 Dark Mode</button>
+        </div>
+
+        <div class="progress-controls">
+            <div class="overall-progress">
+                <span>📊 Overall Progress:</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="overallProgress"></div>
+                </div>
+                <span id="progressText">0%</span>
+            </div>
+            <div class="section-stats">
+                <div class="stat-item">
+                    <span>🎯</span>
+                    <span id="masteredCount">0</span>
+                    <span>Mastered</span>
+                </div>
+                <div class="stat-item">
+                    <span>📚</span>
+                    <span id="learningCount">0</span>
+                    <span>Learning</span>
+                </div>
+                <div class="stat-item">
+                    <span>⭐</span>
+                    <span id="achievementCount">0</span>
+                    <span>Achievements</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="quiz-toggle" onclick="toggleQuizMode()" id="quizToggle">🎮 Start Quiz Mode</button>
+                <button class="quiz-toggle" onclick="resetProgress()" style="background: #95a5a6;">🔄 Reset Progress</button>
+            </div>
         </div>
 
         <h2>🚀 Popular GitHub Commands</h2>
@@ -412,6 +587,225 @@
             }
         }
 
+        // Progress tracking system
+        let commandProgress = {};
+        let quizMode = false;
+
+        function generateCommandId(commandText) {
+            return commandText.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        }
+
+        function initializeProgressSystem() {
+            // Load progress from localStorage
+            const savedProgress = localStorage.getItem('bashCommandProgress');
+            if (savedProgress) {
+                commandProgress = JSON.parse(savedProgress);
+            }
+
+            // Add progress elements to all commands
+            const commandCells = document.querySelectorAll('.command-cell');
+            commandCells.forEach((cell, index) => {
+                const codeElement = cell.querySelector('code');
+                if (codeElement) {
+                    const commandText = codeElement.textContent;
+                    const commandId = generateCommandId(commandText);
+                    
+                    if (!commandProgress[commandId]) {
+                        commandProgress[commandId] = {
+                            attempts: 0,
+                            correct: 0,
+                            level: 'beginner',
+                            progress: 0
+                        };
+                    }
+
+                    // Add quiz buttons
+                    const quizButtons = document.createElement('div');
+                    quizButtons.className = 'quiz-buttons';
+                    quizButtons.innerHTML = `
+                        <button class="practice-btn" onclick="practiceCommand('${commandId}')">Practice</button>
+                        <button class="practice-btn correct-btn" onclick="markCorrect('${commandId}')">✓</button>
+                        <button class="practice-btn wrong-btn" onclick="markWrong('${commandId}')">✗</button>
+                    `;
+
+                    // Add progress bar
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'command-progress';
+                    progressBar.setAttribute('data-command', commandId);
+                    progressBar.innerHTML = '<div class="command-progress-fill"></div>';
+
+                    // Add knowledge level indicator
+                    const levelSpan = document.createElement('span');
+                    levelSpan.className = `knowledge-level level-${commandProgress[commandId].level}`;
+                    levelSpan.setAttribute('data-command', commandId);
+                    levelSpan.textContent = commandProgress[commandId].level.charAt(0).toUpperCase() + commandProgress[commandId].level.slice(1);
+
+                    // Add achievement badge if earned
+                    if (commandProgress[commandId].progress >= 100) {
+                        const badge = document.createElement('span');
+                        badge.className = 'achievement-badge';
+                        badge.textContent = '🏆 Mastered';
+                        cell.appendChild(badge);
+                    }
+
+                    cell.appendChild(quizButtons);
+                    cell.appendChild(progressBar);
+                    cell.appendChild(levelSpan);
+
+                    updateCommandProgress(commandId);
+                }
+            });
+
+            updateOverallProgress();
+        }
+
+        function practiceCommand(commandId) {
+            commandProgress[commandId].attempts++;
+            saveProgress();
+            
+            // Visual feedback for practice
+            const practiceBtn = document.querySelector(`[onclick="practiceCommand('${commandId}')"]`);
+            practiceBtn.style.background = '#f39c12';
+            practiceBtn.textContent = 'Practicing...';
+            setTimeout(() => {
+                practiceBtn.style.background = '#9b59b6';
+                practiceBtn.textContent = 'Practice';
+            }, 1000);
+        }
+
+        function markCorrect(commandId) {
+            commandProgress[commandId].attempts++;
+            commandProgress[commandId].correct++;
+            updateKnowledgeLevel(commandId);
+            updateCommandProgress(commandId);
+            updateOverallProgress();
+            saveProgress();
+            
+            // Visual feedback
+            showFeedback(commandId, true);
+        }
+
+        function markWrong(commandId) {
+            commandProgress[commandId].attempts++;
+            updateKnowledgeLevel(commandId);
+            updateCommandProgress(commandId);
+            updateOverallProgress();
+            saveProgress();
+            
+            // Visual feedback
+            showFeedback(commandId, false);
+        }
+
+        function showFeedback(commandId, isCorrect) {
+            const cell = document.querySelector(`[data-command="${commandId}"]`).closest('.command-cell');
+            const feedback = document.createElement('div');
+            feedback.style.position = 'absolute';
+            feedback.style.top = '0';
+            feedback.style.right = '0';
+            feedback.style.padding = '5px 10px';
+            feedback.style.borderRadius = '3px';
+            feedback.style.color = 'white';
+            feedback.style.fontWeight = 'bold';
+            feedback.style.zIndex = '1000';
+            
+            if (isCorrect) {
+                feedback.style.background = '#27ae60';
+                feedback.textContent = '✓ Correct!';
+            } else {
+                feedback.style.background = '#e74c3c';
+                feedback.textContent = '✗ Try again!';
+            }
+            
+            cell.style.position = 'relative';
+            cell.appendChild(feedback);
+            
+            setTimeout(() => {
+                cell.removeChild(feedback);
+            }, 2000);
+        }
+
+        function updateKnowledgeLevel(commandId) {
+            const data = commandProgress[commandId];
+            const accuracy = data.attempts > 0 ? (data.correct / data.attempts) * 100 : 0;
+            
+            if (accuracy >= 90 && data.attempts >= 5) {
+                data.level = 'expert';
+                data.progress = 100;
+            } else if (accuracy >= 70 && data.attempts >= 3) {
+                data.level = 'proficient';
+                data.progress = 75;
+            } else if (accuracy >= 50 && data.attempts >= 2) {
+                data.level = 'learning';
+                data.progress = 50;
+            } else {
+                data.level = 'beginner';
+                data.progress = Math.min(25, (data.attempts / 2) * 25);
+            }
+        }
+
+        function updateCommandProgress(commandId) {
+            const progressFill = document.querySelector(`[data-command="${commandId}"] .command-progress-fill`);
+            const levelSpan = document.querySelector(`span[data-command="${commandId}"]`);
+            
+            if (progressFill) {
+                progressFill.style.width = commandProgress[commandId].progress + '%';
+            }
+            
+            if (levelSpan) {
+                const level = commandProgress[commandId].level;
+                levelSpan.className = `knowledge-level level-${level}`;
+                levelSpan.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+            }
+        }
+
+        function updateOverallProgress() {
+            const totalCommands = Object.keys(commandProgress).length;
+            let masteredCount = 0;
+            let learningCount = 0;
+            let achievementCount = 0;
+            
+            Object.values(commandProgress).forEach(data => {
+                if (data.level === 'expert') masteredCount++;
+                else if (data.level === 'learning' || data.level === 'proficient') learningCount++;
+                if (data.progress >= 100) achievementCount++;
+            });
+            
+            const overallProgress = totalCommands > 0 ? ((masteredCount + learningCount * 0.5) / totalCommands) * 100 : 0;
+            
+            document.getElementById('overallProgress').style.width = overallProgress + '%';
+            document.getElementById('progressText').textContent = Math.round(overallProgress) + '%';
+            document.getElementById('masteredCount').textContent = masteredCount;
+            document.getElementById('learningCount').textContent = learningCount;
+            document.getElementById('achievementCount').textContent = achievementCount;
+        }
+
+        function toggleQuizMode() {
+            quizMode = !quizMode;
+            const body = document.body;
+            const toggleBtn = document.getElementById('quizToggle');
+            
+            if (quizMode) {
+                body.classList.add('quiz-mode');
+                toggleBtn.classList.add('active');
+                toggleBtn.textContent = '📚 Exit Quiz Mode';
+            } else {
+                body.classList.remove('quiz-mode');
+                toggleBtn.classList.remove('active');
+                toggleBtn.textContent = '🎮 Start Quiz Mode';
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem('bashCommandProgress', JSON.stringify(commandProgress));
+        }
+
+        function resetProgress() {
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                localStorage.removeItem('bashCommandProgress');
+                location.reload();
+            }
+        }
+
         // Initialize theme and search on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Load saved theme
@@ -431,6 +825,9 @@
                     document.getElementById('searchBox').focus();
                 }
             });
+
+            // Initialize progress system
+            initializeProgressSystem();
         });
     </script>
 </body>
