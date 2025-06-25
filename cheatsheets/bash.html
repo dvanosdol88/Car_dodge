@@ -161,19 +161,20 @@
         </table>
 
         <h2>🧠 Bonus: Useful Bash Patterns</h2>
-        <div class="code-block">
-<code># Pipe output to grep
-ls -l | grep ".txt"
-
-# Count lines with a match
-grep -c "error" logfile.txt
-
-# Save command output to a file
-ls > list.txt
-
-# Append output to a file
-echo "New entry" >> notes.txt</code>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Command</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="command-cell"><code>ls -l | grep ".txt"</code><button class="copy-btn" onclick="copyToClipboard('ls -l | grep \".txt\"')">Copy</button></td><td>Pipe output to grep</td></tr>
+                <tr><td class="command-cell"><code>grep -c "error" logfile.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -c \"error\" logfile.txt')">Copy</button></td><td>Count lines with a match</td></tr>
+                <tr><td class="command-cell"><code>ls > list.txt</code><button class="copy-btn" onclick="copyToClipboard('ls > list.txt')">Copy</button></td><td>Save command output to a file</td></tr>
+                <tr><td class="command-cell"><code>echo "New entry" >> notes.txt</code><button class="copy-btn" onclick="copyToClipboard('echo \"New entry\" >> notes.txt')">Copy</button></td><td>Append output to a file</td></tr>
+            </tbody>
+        </table>
 
         <div class="footer">
             <em>Cheat Sheet by Meta-G Assistant for David</em>
