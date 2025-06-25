@@ -52,6 +52,26 @@
             color: #7f8c8d;
             margin-top: 30px;
         }
+        .copy-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 8px;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover {
+            background: #2980b9;
+        }
+        .copy-btn:active {
+            background: #27ae60;
+        }
+        .command-cell {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -68,27 +88,27 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><code>grep "pattern" file.txt</code></td>
+                    <td class="command-cell"><code>grep "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep \"pattern\" file.txt')">Copy</button></td>
                     <td>Search for <code>"pattern"</code> in <code>file.txt</code></td>
                 </tr>
                 <tr>
-                    <td><code>grep -i "pattern" file.txt</code></td>
+                    <td class="command-cell"><code>grep -i "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -i \"pattern\" file.txt')">Copy</button></td>
                     <td>Case-insensitive search</td>
                 </tr>
                 <tr>
-                    <td><code>grep -v "pattern" file.txt</code></td>
+                    <td class="command-cell"><code>grep -v "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -v \"pattern\" file.txt')">Copy</button></td>
                     <td>Show lines that <strong>don't</strong> match</td>
                 </tr>
                 <tr>
-                    <td><code>grep -n "pattern" file.txt</code></td>
+                    <td class="command-cell"><code>grep -n "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -n \"pattern\" file.txt')">Copy</button></td>
                     <td>Show line numbers</td>
                 </tr>
                 <tr>
-                    <td><code>grep -r "pattern" folder/</code></td>
+                    <td class="command-cell"><code>grep -r "pattern" folder/</code><button class="copy-btn" onclick="copyToClipboard('grep -r \"pattern\" folder/')">Copy</button></td>
                     <td>Recursive search in all files in folder</td>
                 </tr>
                 <tr>
-                    <td><code>command | grep "pattern"</code></td>
+                    <td class="command-cell"><code>command | grep "pattern"</code><button class="copy-btn" onclick="copyToClipboard('command | grep \"pattern\"')">Copy</button></td>
                     <td>Search output from another command</td>
                 </tr>
             </tbody>
@@ -103,18 +123,18 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td><code>ls</code></td><td>List files and folders</td></tr>
-                <tr><td><code>cd folder/</code></td><td>Change directory</td></tr>
-                <tr><td><code>pwd</code></td><td>Show current directory</td></tr>
-                <tr><td><code>mkdir new_folder</code></td><td>Make a new folder</td></tr>
-                <tr><td><code>rm file.txt</code></td><td>Delete a file</td></tr>
-                <tr><td><code>cp file1 file2</code></td><td>Copy a file</td></tr>
-                <tr><td><code>mv file1 file2</code></td><td>Move or rename a file</td></tr>
-                <tr><td><code>touch file.txt</code></td><td>Create a new empty file</td></tr>
-                <tr><td><code>cat file.txt</code></td><td>Print file contents</td></tr>
-                <tr><td><code>echo "text"</code></td><td>Print text</td></tr>
-                <tr><td><code>clear</code></td><td>Clear the terminal screen</td></tr>
-                <tr><td><code>history</code></td><td>Show past commands</td></tr>
+                <tr><td class="command-cell"><code>ls</code><button class="copy-btn" onclick="copyToClipboard('ls')">Copy</button></td><td>List files and folders</td></tr>
+                <tr><td class="command-cell"><code>cd folder/</code><button class="copy-btn" onclick="copyToClipboard('cd folder/')">Copy</button></td><td>Change directory</td></tr>
+                <tr><td class="command-cell"><code>pwd</code><button class="copy-btn" onclick="copyToClipboard('pwd')">Copy</button></td><td>Show current directory</td></tr>
+                <tr><td class="command-cell"><code>mkdir new_folder</code><button class="copy-btn" onclick="copyToClipboard('mkdir new_folder')">Copy</button></td><td>Make a new folder</td></tr>
+                <tr><td class="command-cell"><code>rm file.txt</code><button class="copy-btn" onclick="copyToClipboard('rm file.txt')">Copy</button></td><td>Delete a file</td></tr>
+                <tr><td class="command-cell"><code>cp file1 file2</code><button class="copy-btn" onclick="copyToClipboard('cp file1 file2')">Copy</button></td><td>Copy a file</td></tr>
+                <tr><td class="command-cell"><code>mv file1 file2</code><button class="copy-btn" onclick="copyToClipboard('mv file1 file2')">Copy</button></td><td>Move or rename a file</td></tr>
+                <tr><td class="command-cell"><code>touch file.txt</code><button class="copy-btn" onclick="copyToClipboard('touch file.txt')">Copy</button></td><td>Create a new empty file</td></tr>
+                <tr><td class="command-cell"><code>cat file.txt</code><button class="copy-btn" onclick="copyToClipboard('cat file.txt')">Copy</button></td><td>Print file contents</td></tr>
+                <tr><td class="command-cell"><code>echo "text"</code><button class="copy-btn" onclick="copyToClipboard('echo \"text\"')">Copy</button></td><td>Print text</td></tr>
+                <tr><td class="command-cell"><code>clear</code><button class="copy-btn" onclick="copyToClipboard('clear')">Copy</button></td><td>Clear the terminal screen</td></tr>
+                <tr><td class="command-cell"><code>history</code><button class="copy-btn" onclick="copyToClipboard('history')">Copy</button></td><td>Show past commands</td></tr>
             </tbody>
         </table>
 
@@ -127,16 +147,16 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td><code>wsl</code></td><td>Start your WSL Linux environment from Windows</td></tr>
-                <tr><td><code>cd ~</code></td><td>Go to your home directory</td></tr>
-                <tr><td><code>code .</code></td><td>Open current folder in VS Code</td></tr>
-                <tr><td><code>./script.sh</code></td><td>Run a shell script</td></tr>
-                <tr><td><code>npm start</code></td><td>Start a Node.js app</td></tr>
-                <tr><td><code>sudo apt update</code></td><td>Update package lists</td></tr>
-                <tr><td><code>sudo apt install name</code></td><td>Install a package</td></tr>
-                <tr><td><code>git clone &lt;url&gt;</code></td><td>Clone a GitHub repo</td></tr>
-                <tr><td><code>git status</code></td><td>See Git status</td></tr>
-                <tr><td><code>git push/pull</code></td><td>Push or pull to/from GitHub</td></tr>
+                <tr><td class="command-cell"><code>wsl</code><button class="copy-btn" onclick="copyToClipboard('wsl')">Copy</button></td><td>Start your WSL Linux environment from Windows</td></tr>
+                <tr><td class="command-cell"><code>cd ~</code><button class="copy-btn" onclick="copyToClipboard('cd ~')">Copy</button></td><td>Go to your home directory</td></tr>
+                <tr><td class="command-cell"><code>code .</code><button class="copy-btn" onclick="copyToClipboard('code .')">Copy</button></td><td>Open current folder in VS Code</td></tr>
+                <tr><td class="command-cell"><code>./script.sh</code><button class="copy-btn" onclick="copyToClipboard('./script.sh')">Copy</button></td><td>Run a shell script</td></tr>
+                <tr><td class="command-cell"><code>npm start</code><button class="copy-btn" onclick="copyToClipboard('npm start')">Copy</button></td><td>Start a Node.js app</td></tr>
+                <tr><td class="command-cell"><code>sudo apt update</code><button class="copy-btn" onclick="copyToClipboard('sudo apt update')">Copy</button></td><td>Update package lists</td></tr>
+                <tr><td class="command-cell"><code>sudo apt install name</code><button class="copy-btn" onclick="copyToClipboard('sudo apt install name')">Copy</button></td><td>Install a package</td></tr>
+                <tr><td class="command-cell"><code>git clone &lt;url&gt;</code><button class="copy-btn" onclick="copyToClipboard('git clone <url>')">Copy</button></td><td>Clone a GitHub repo</td></tr>
+                <tr><td class="command-cell"><code>git status</code><button class="copy-btn" onclick="copyToClipboard('git status')">Copy</button></td><td>See Git status</td></tr>
+                <tr><td class="command-cell"><code>git push/pull</code><button class="copy-btn" onclick="copyToClipboard('git push')">Copy</button></td><td>Push or pull to/from GitHub</td></tr>
             </tbody>
         </table>
 
@@ -159,5 +179,24 @@ echo "New entry" >> notes.txt</code>
             <em>Cheat Sheet by Meta-G Assistant for David</em>
         </div>
     </div>
+
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show temporary feedback
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓';
+                btn.style.background = '#27ae60';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#3498db';
+                }, 1000);
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+                alert('Copy failed. Please select and copy manually.');
+            });
+        }
+    </script>
 </body>
 </html>
