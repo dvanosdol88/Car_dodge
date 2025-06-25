@@ -1,60 +1,148 @@
-# 🐚 Bash + 🤖 Claude Code Cheat Sheet
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐚 Bash + 🤖 Claude Code Cheat Sheet</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+        h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #3498db; color: white; }
+        tr:hover { background-color: #f5f5f5; }
+        code { 
+            background-color: #f4f4f4; 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-family: 'Courier New', monospace;
+            color: #e74c3c;
+        }
+        .code-block {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .code-block code {
+            background: none;
+            color: #ecf0f1;
+            padding: 0;
+        }
+        hr { border: none; height: 2px; background: #bdc3c7; margin: 30px 0; }
+        .footer {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐚 Bash + 🤖 Claude Code Cheat Sheet</h1>
 
----
+        <h2>🔍 GREP — Find Text in Files</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Command</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>grep "pattern" file.txt</code></td>
+                    <td>Search for <code>"pattern"</code> in <code>file.txt</code></td>
+                </tr>
+                <tr>
+                    <td><code>grep -i "pattern" file.txt</code></td>
+                    <td>Case-insensitive search</td>
+                </tr>
+                <tr>
+                    <td><code>grep -v "pattern" file.txt</code></td>
+                    <td>Show lines that <strong>don't</strong> match</td>
+                </tr>
+                <tr>
+                    <td><code>grep -n "pattern" file.txt</code></td>
+                    <td>Show line numbers</td>
+                </tr>
+                <tr>
+                    <td><code>grep -r "pattern" folder/</code></td>
+                    <td>Recursive search in all files in folder</td>
+                </tr>
+                <tr>
+                    <td><code>command | grep "pattern"</code></td>
+                    <td>Search output from another command</td>
+                </tr>
+            </tbody>
+        </table>
 
-## 🔍 GREP — Find Text in Files
+        <h2>🐚 Common Bash Commands</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Command</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>ls</code></td><td>List files and folders</td></tr>
+                <tr><td><code>cd folder/</code></td><td>Change directory</td></tr>
+                <tr><td><code>pwd</code></td><td>Show current directory</td></tr>
+                <tr><td><code>mkdir new_folder</code></td><td>Make a new folder</td></tr>
+                <tr><td><code>rm file.txt</code></td><td>Delete a file</td></tr>
+                <tr><td><code>cp file1 file2</code></td><td>Copy a file</td></tr>
+                <tr><td><code>mv file1 file2</code></td><td>Move or rename a file</td></tr>
+                <tr><td><code>touch file.txt</code></td><td>Create a new empty file</td></tr>
+                <tr><td><code>cat file.txt</code></td><td>Print file contents</td></tr>
+                <tr><td><code>echo "text"</code></td><td>Print text</td></tr>
+                <tr><td><code>clear</code></td><td>Clear the terminal screen</td></tr>
+                <tr><td><code>history</code></td><td>Show past commands</td></tr>
+            </tbody>
+        </table>
 
-| Command | Description |
-|--------|-------------|
-| `grep "pattern" file.txt` | Search for `"pattern"` in `file.txt` |
-| `grep -i "pattern" file.txt` | Case-insensitive search |
-| `grep -v "pattern" file.txt` | Show lines that **don't** match |
-| `grep -n "pattern" file.txt` | Show line numbers |
-| `grep -r "pattern" folder/` | Recursive search in all files in folder |
-| `command | grep "pattern"` | Search output from another command |
+        <h2>🤖 Claude Code + WSL (Windows Subsystem for Linux)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Command</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>wsl</code></td><td>Start your WSL Linux environment from Windows</td></tr>
+                <tr><td><code>cd ~</code></td><td>Go to your home directory</td></tr>
+                <tr><td><code>code .</code></td><td>Open current folder in VS Code</td></tr>
+                <tr><td><code>./script.sh</code></td><td>Run a shell script</td></tr>
+                <tr><td><code>npm start</code></td><td>Start a Node.js app</td></tr>
+                <tr><td><code>sudo apt update</code></td><td>Update package lists</td></tr>
+                <tr><td><code>sudo apt install name</code></td><td>Install a package</td></tr>
+                <tr><td><code>git clone &lt;url&gt;</code></td><td>Clone a GitHub repo</td></tr>
+                <tr><td><code>git status</code></td><td>See Git status</td></tr>
+                <tr><td><code>git push/pull</code></td><td>Push or pull to/from GitHub</td></tr>
+            </tbody>
+        </table>
 
----
-
-## 🐚 Common Bash Commands
-
-| Command | Description |
-|---------|-------------|
-| `ls` | List files and folders |
-| `cd folder/` | Change directory |
-| `pwd` | Show current directory |
-| `mkdir new_folder` | Make a new folder |
-| `rm file.txt` | Delete a file |
-| `cp file1 file2` | Copy a file |
-| `mv file1 file2` | Move or rename a file |
-| `touch file.txt` | Create a new empty file |
-| `cat file.txt` | Print file contents |
-| `echo "text"` | Print text |
-| `clear` | Clear the terminal screen |
-| `history` | Show past commands |
-
----
-
-## 🤖 Claude Code + WSL (Windows Subsystem for Linux)
-
-| Command | Description |
-|---------|-------------|
-| `wsl` | Start your WSL Linux environment from Windows |
-| `cd ~` | Go to your home directory |
-| `code .` | Open current folder in VS Code |
-| `./script.sh` | Run a shell script |
-| `npm start` | Start a Node.js app |
-| `sudo apt update` | Update package lists |
-| `sudo apt install name` | Install a package |
-| `git clone <url>` | Clone a GitHub repo |
-| `git status` | See Git status |
-| `git push/pull` | Push or pull to/from GitHub |
-
----
-
-## 🧠 Bonus: Useful Bash Patterns
-
-```bash
-# Pipe output to grep
+        <h2>🧠 Bonus: Useful Bash Patterns</h2>
+        <div class="code-block">
+<code># Pipe output to grep
 ls -l | grep ".txt"
 
 # Count lines with a match
@@ -64,9 +152,12 @@ grep -c "error" logfile.txt
 ls > list.txt
 
 # Append output to a file
-echo "New entry" >> notes.txt
-```
+echo "New entry" >> notes.txt</code>
+        </div>
 
----
-
-*Cheat Sheet by Meta-G Assistant for David*
+        <div class="footer">
+            <em>Cheat Sheet by Meta-G Assistant for David</em>
+        </div>
+    </div>
+</body>
+</html>
