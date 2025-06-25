@@ -69,6 +69,25 @@
         .copy-btn:active {
             background: #27ae60;
         }
+        .learn-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 5px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+        .learn-btn:hover {
+            background: #229954;
+        }
+        .learn-btn:active {
+            background: #1e8449;
+        }
         .command-cell {
             position: relative;
         }
@@ -160,7 +179,33 @@
             <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">🌙 Dark Mode</button>
         </div>
 
-        <h2>🔍 GREP — Find Text in Files</h2>
+        <h2>🚀 Popular GitHub Commands</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Command</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="command-cell"><code>git clone &lt;url&gt;</code><button class="copy-btn" onclick="copyToClipboard('git clone <url>')">Copy</button><a href="https://linux.die.net/man/1/git-clone" target="_blank" class="learn-btn">Learn More</a></td><td>Clone a repository from GitHub</td></tr>
+                <tr><td class="command-cell"><code>git status</code><button class="copy-btn" onclick="copyToClipboard('git status')">Copy</button><a href="https://linux.die.net/man/1/git-status" target="_blank" class="learn-btn">Learn More</a></td><td>Check working tree status</td></tr>
+                <tr><td class="command-cell"><code>git add .</code><button class="copy-btn" onclick="copyToClipboard('git add .')">Copy</button><a href="https://linux.die.net/man/1/git-add" target="_blank" class="learn-btn">Learn More</a></td><td>Stage all changes for commit</td></tr>
+                <tr><td class="command-cell"><code>git add &lt;file&gt;</code><button class="copy-btn" onclick="copyToClipboard('git add <file>')">Copy</button><a href="https://linux.die.net/man/1/git-add" target="_blank" class="learn-btn">Learn More</a></td><td>Stage specific file for commit</td></tr>
+                <tr><td class="command-cell"><code>git commit -m "message"</code><button class="copy-btn" onclick="copyToClipboard('git commit -m \"message\"')">Copy</button><a href="https://linux.die.net/man/1/git-commit" target="_blank" class="learn-btn">Learn More</a></td><td>Commit staged changes with message</td></tr>
+                <tr><td class="command-cell"><code>git push</code><button class="copy-btn" onclick="copyToClipboard('git push')">Copy</button><a href="https://linux.die.net/man/1/git-push" target="_blank" class="learn-btn">Learn More</a></td><td>Push commits to remote repository</td></tr>
+                <tr><td class="command-cell"><code>git pull</code><button class="copy-btn" onclick="copyToClipboard('git pull')">Copy</button><a href="https://linux.die.net/man/1/git-pull" target="_blank" class="learn-btn">Learn More</a></td><td>Pull latest changes from remote</td></tr>
+                <tr><td class="command-cell"><code>git branch</code><button class="copy-btn" onclick="copyToClipboard('git branch')">Copy</button><a href="https://linux.die.net/man/1/git-branch" target="_blank" class="learn-btn">Learn More</a></td><td>List all branches</td></tr>
+                <tr><td class="command-cell"><code>git checkout &lt;branch&gt;</code><button class="copy-btn" onclick="copyToClipboard('git checkout <branch>')">Copy</button><a href="https://linux.die.net/man/1/git-checkout" target="_blank" class="learn-btn">Learn More</a></td><td>Switch to a different branch</td></tr>
+                <tr><td class="command-cell"><code>git checkout -b &lt;branch&gt;</code><button class="copy-btn" onclick="copyToClipboard('git checkout -b <branch>')">Copy</button><a href="https://linux.die.net/man/1/git-checkout" target="_blank" class="learn-btn">Learn More</a></td><td>Create and switch to new branch</td></tr>
+                <tr><td class="command-cell"><code>git merge &lt;branch&gt;</code><button class="copy-btn" onclick="copyToClipboard('git merge <branch>')">Copy</button><a href="https://linux.die.net/man/1/git-merge" target="_blank" class="learn-btn">Learn More</a></td><td>Merge branch into current branch</td></tr>
+                <tr><td class="command-cell"><code>git log</code><button class="copy-btn" onclick="copyToClipboard('git log')">Copy</button><a href="https://linux.die.net/man/1/git-log" target="_blank" class="learn-btn">Learn More</a></td><td>View commit history</td></tr>
+                <tr><td class="command-cell"><code>git diff</code><button class="copy-btn" onclick="copyToClipboard('git diff')">Copy</button><a href="https://linux.die.net/man/1/git-diff" target="_blank" class="learn-btn">Learn More</a></td><td>Show changes between commits</td></tr>
+                <tr><td class="command-cell"><code>git reset --hard HEAD</code><button class="copy-btn" onclick="copyToClipboard('git reset --hard HEAD')">Copy</button><a href="https://linux.die.net/man/1/git-reset" target="_blank" class="learn-btn">Learn More</a></td><td>Discard all local changes</td></tr>
+            </tbody>
+        </table>
+
+        <h2>🐚 Common Bash Commands</h2>
         <table>
             <thead>
                 <tr>
@@ -205,18 +250,18 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td class="command-cell"><code>ls</code><button class="copy-btn" onclick="copyToClipboard('ls')">Copy</button></td><td>List files and folders</td></tr>
-                <tr><td class="command-cell"><code>cd folder/</code><button class="copy-btn" onclick="copyToClipboard('cd folder/')">Copy</button></td><td>Change directory</td></tr>
-                <tr><td class="command-cell"><code>pwd</code><button class="copy-btn" onclick="copyToClipboard('pwd')">Copy</button></td><td>Show current directory</td></tr>
-                <tr><td class="command-cell"><code>mkdir new_folder</code><button class="copy-btn" onclick="copyToClipboard('mkdir new_folder')">Copy</button></td><td>Make a new folder</td></tr>
-                <tr><td class="command-cell"><code>rm file.txt</code><button class="copy-btn" onclick="copyToClipboard('rm file.txt')">Copy</button></td><td>Delete a file</td></tr>
-                <tr><td class="command-cell"><code>cp file1 file2</code><button class="copy-btn" onclick="copyToClipboard('cp file1 file2')">Copy</button></td><td>Copy a file</td></tr>
-                <tr><td class="command-cell"><code>mv file1 file2</code><button class="copy-btn" onclick="copyToClipboard('mv file1 file2')">Copy</button></td><td>Move or rename a file</td></tr>
-                <tr><td class="command-cell"><code>touch file.txt</code><button class="copy-btn" onclick="copyToClipboard('touch file.txt')">Copy</button></td><td>Create a new empty file</td></tr>
-                <tr><td class="command-cell"><code>cat file.txt</code><button class="copy-btn" onclick="copyToClipboard('cat file.txt')">Copy</button></td><td>Print file contents</td></tr>
-                <tr><td class="command-cell"><code>echo "text"</code><button class="copy-btn" onclick="copyToClipboard('echo \"text\"')">Copy</button></td><td>Print text</td></tr>
-                <tr><td class="command-cell"><code>clear</code><button class="copy-btn" onclick="copyToClipboard('clear')">Copy</button></td><td>Clear the terminal screen</td></tr>
-                <tr><td class="command-cell"><code>history</code><button class="copy-btn" onclick="copyToClipboard('history')">Copy</button></td><td>Show past commands</td></tr>
+                <tr><td class="command-cell"><code>ls</code><button class="copy-btn" onclick="copyToClipboard('ls')">Copy</button><a href="https://linux.die.net/man/1/ls" target="_blank" class="learn-btn">Learn More</a></td><td>List files and folders</td></tr>
+                <tr><td class="command-cell"><code>cd folder/</code><button class="copy-btn" onclick="copyToClipboard('cd folder/')">Copy</button><a href="https://linux.die.net/man/1/cd" target="_blank" class="learn-btn">Learn More</a></td><td>Change directory</td></tr>
+                <tr><td class="command-cell"><code>pwd</code><button class="copy-btn" onclick="copyToClipboard('pwd')">Copy</button><a href="https://linux.die.net/man/1/pwd" target="_blank" class="learn-btn">Learn More</a></td><td>Show current directory</td></tr>
+                <tr><td class="command-cell"><code>mkdir new_folder</code><button class="copy-btn" onclick="copyToClipboard('mkdir new_folder')">Copy</button><a href="https://linux.die.net/man/1/mkdir" target="_blank" class="learn-btn">Learn More</a></td><td>Make a new folder</td></tr>
+                <tr><td class="command-cell"><code>rm file.txt</code><button class="copy-btn" onclick="copyToClipboard('rm file.txt')">Copy</button><a href="https://linux.die.net/man/1/rm" target="_blank" class="learn-btn">Learn More</a></td><td>Delete a file</td></tr>
+                <tr><td class="command-cell"><code>cp file1 file2</code><button class="copy-btn" onclick="copyToClipboard('cp file1 file2')">Copy</button><a href="https://linux.die.net/man/1/cp" target="_blank" class="learn-btn">Learn More</a></td><td>Copy a file</td></tr>
+                <tr><td class="command-cell"><code>mv file1 file2</code><button class="copy-btn" onclick="copyToClipboard('mv file1 file2')">Copy</button><a href="https://linux.die.net/man/1/mv" target="_blank" class="learn-btn">Learn More</a></td><td>Move or rename a file</td></tr>
+                <tr><td class="command-cell"><code>touch file.txt</code><button class="copy-btn" onclick="copyToClipboard('touch file.txt')">Copy</button><a href="https://linux.die.net/man/1/touch" target="_blank" class="learn-btn">Learn More</a></td><td>Create a new empty file</td></tr>
+                <tr><td class="command-cell"><code>cat file.txt</code><button class="copy-btn" onclick="copyToClipboard('cat file.txt')">Copy</button><a href="https://linux.die.net/man/1/cat" target="_blank" class="learn-btn">Learn More</a></td><td>Print file contents</td></tr>
+                <tr><td class="command-cell"><code>echo "text"</code><button class="copy-btn" onclick="copyToClipboard('echo \"text\"')">Copy</button><a href="https://linux.die.net/man/1/echo" target="_blank" class="learn-btn">Learn More</a></td><td>Print text</td></tr>
+                <tr><td class="command-cell"><code>clear</code><button class="copy-btn" onclick="copyToClipboard('clear')">Copy</button><a href="https://linux.die.net/man/1/clear" target="_blank" class="learn-btn">Learn More</a></td><td>Clear the terminal screen</td></tr>
+                <tr><td class="command-cell"><code>history</code><button class="copy-btn" onclick="copyToClipboard('history')">Copy</button><a href="https://linux.die.net/man/3/history" target="_blank" class="learn-btn">Learn More</a></td><td>Show past commands</td></tr>
             </tbody>
         </table>
 
@@ -229,16 +274,34 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td class="command-cell"><code>wsl</code><button class="copy-btn" onclick="copyToClipboard('wsl')">Copy</button></td><td>Start your WSL Linux environment from Windows</td></tr>
-                <tr><td class="command-cell"><code>cd ~</code><button class="copy-btn" onclick="copyToClipboard('cd ~')">Copy</button></td><td>Go to your home directory</td></tr>
-                <tr><td class="command-cell"><code>code .</code><button class="copy-btn" onclick="copyToClipboard('code .')">Copy</button></td><td>Open current folder in VS Code</td></tr>
-                <tr><td class="command-cell"><code>./script.sh</code><button class="copy-btn" onclick="copyToClipboard('./script.sh')">Copy</button></td><td>Run a shell script</td></tr>
-                <tr><td class="command-cell"><code>npm start</code><button class="copy-btn" onclick="copyToClipboard('npm start')">Copy</button></td><td>Start a Node.js app</td></tr>
-                <tr><td class="command-cell"><code>sudo apt update</code><button class="copy-btn" onclick="copyToClipboard('sudo apt update')">Copy</button></td><td>Update package lists</td></tr>
-                <tr><td class="command-cell"><code>sudo apt install name</code><button class="copy-btn" onclick="copyToClipboard('sudo apt install name')">Copy</button></td><td>Install a package</td></tr>
-                <tr><td class="command-cell"><code>git clone &lt;url&gt;</code><button class="copy-btn" onclick="copyToClipboard('git clone <url>')">Copy</button></td><td>Clone a GitHub repo</td></tr>
-                <tr><td class="command-cell"><code>git status</code><button class="copy-btn" onclick="copyToClipboard('git status')">Copy</button></td><td>See Git status</td></tr>
-                <tr><td class="command-cell"><code>git push/pull</code><button class="copy-btn" onclick="copyToClipboard('git push')">Copy</button></td><td>Push or pull to/from GitHub</td></tr>
+                <tr><td class="command-cell"><code>wsl</code><button class="copy-btn" onclick="copyToClipboard('wsl')">Copy</button><a href="https://docs.microsoft.com/en-us/windows/wsl/" target="_blank" class="learn-btn">Learn More</a></td><td>Start your WSL Linux environment from Windows</td></tr>
+                <tr><td class="command-cell"><code>cd ~</code><button class="copy-btn" onclick="copyToClipboard('cd ~')">Copy</button><a href="https://linux.die.net/man/1/cd" target="_blank" class="learn-btn">Learn More</a></td><td>Go to your home directory</td></tr>
+                <tr><td class="command-cell"><code>code .</code><button class="copy-btn" onclick="copyToClipboard('code .')">Copy</button><a href="https://code.visualstudio.com/docs" target="_blank" class="learn-btn">Learn More</a></td><td>Open current folder in VS Code</td></tr>
+                <tr><td class="command-cell"><code>./script.sh</code><button class="copy-btn" onclick="copyToClipboard('./script.sh')">Copy</button><a href="https://linux.die.net/man/1/bash" target="_blank" class="learn-btn">Learn More</a></td><td>Run a shell script</td></tr>
+                <tr><td class="command-cell"><code>npm start</code><button class="copy-btn" onclick="copyToClipboard('npm start')">Copy</button><a href="https://docs.npmjs.com/cli/v10/commands/npm-start" target="_blank" class="learn-btn">Learn More</a></td><td>Start a Node.js app</td></tr>
+                <tr><td class="command-cell"><code>sudo apt update</code><button class="copy-btn" onclick="copyToClipboard('sudo apt update')">Copy</button><a href="https://linux.die.net/man/8/apt" target="_blank" class="learn-btn">Learn More</a></td><td>Update package lists</td></tr>
+                <tr><td class="command-cell"><code>sudo apt install name</code><button class="copy-btn" onclick="copyToClipboard('sudo apt install name')">Copy</button><a href="https://linux.die.net/man/8/apt" target="_blank" class="learn-btn">Learn More</a></td><td>Install a package</td></tr>
+                <tr><td class="command-cell"><code>chmod +x script.sh</code><button class="copy-btn" onclick="copyToClipboard('chmod +x script.sh')">Copy</button><a href="https://linux.die.net/man/1/chmod" target="_blank" class="learn-btn">Learn More</a></td><td>Make script executable</td></tr>
+                <tr><td class="command-cell"><code>ps aux</code><button class="copy-btn" onclick="copyToClipboard('ps aux')">Copy</button><a href="https://linux.die.net/man/1/ps" target="_blank" class="learn-btn">Learn More</a></td><td>Show running processes</td></tr>
+                <tr><td class="command-cell"><code>kill &lt;pid&gt;</code><button class="copy-btn" onclick="copyToClipboard('kill <pid>')">Copy</button><a href="https://linux.die.net/man/1/kill" target="_blank" class="learn-btn">Learn More</a></td><td>Terminate a process by ID</td></tr>
+            </tbody>
+        </table>
+
+        <h2>🔍 GREP — Find Text in Files</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Command</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="command-cell"><code>grep "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep \"pattern\" file.txt')">Copy</button><a href="https://linux.die.net/man/1/grep" target="_blank" class="learn-btn">Learn More</a></td><td>Search for <code>"pattern"</code> in <code>file.txt</code></td></tr>
+                <tr><td class="command-cell"><code>grep -i "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -i \"pattern\" file.txt')">Copy</button><a href="https://linux.die.net/man/1/grep" target="_blank" class="learn-btn">Learn More</a></td><td>Case-insensitive search</td></tr>
+                <tr><td class="command-cell"><code>grep -v "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -v \"pattern\" file.txt')">Copy</button><a href="https://linux.die.net/man/1/grep" target="_blank" class="learn-btn">Learn More</a></td><td>Show lines that <strong>don't</strong> match</td></tr>
+                <tr><td class="command-cell"><code>grep -n "pattern" file.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -n \"pattern\" file.txt')">Copy</button><a href="https://linux.die.net/man/1/grep" target="_blank" class="learn-btn">Learn More</a></td><td>Show line numbers</td></tr>
+                <tr><td class="command-cell"><code>grep -r "pattern" folder/</code><button class="copy-btn" onclick="copyToClipboard('grep -r \"pattern\" folder/')">Copy</button><a href="https://linux.die.net/man/1/grep" target="_blank" class="learn-btn">Learn More</a></td><td>Recursive search in all files in folder</td></tr>
+                <tr><td class="command-cell"><code>command | grep "pattern"</code><button class="copy-btn" onclick="copyToClipboard('command | grep \"pattern\"')">Copy</button><a href="https://linux.die.net/man/1/grep" target="_blank" class="learn-btn">Learn More</a></td><td>Search output from another command</td></tr>
             </tbody>
         </table>
 
@@ -251,10 +314,10 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td class="command-cell"><code>ls -l | grep ".txt"</code><button class="copy-btn" onclick="copyToClipboard('ls -l | grep \".txt\"')">Copy</button></td><td>Pipe output to grep</td></tr>
-                <tr><td class="command-cell"><code>grep -c "error" logfile.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -c \"error\" logfile.txt')">Copy</button></td><td>Count lines with a match</td></tr>
-                <tr><td class="command-cell"><code>ls > list.txt</code><button class="copy-btn" onclick="copyToClipboard('ls > list.txt')">Copy</button></td><td>Save command output to a file</td></tr>
-                <tr><td class="command-cell"><code>echo "New entry" >> notes.txt</code><button class="copy-btn" onclick="copyToClipboard('echo \"New entry\" >> notes.txt')">Copy</button></td><td>Append output to a file</td></tr>
+                <tr><td class="command-cell"><code>ls -l | grep ".txt"</code><button class="copy-btn" onclick="copyToClipboard('ls -l | grep \".txt\"')">Copy</button><a href="https://linux.die.net/man/1/ls" target="_blank" class="learn-btn">Learn More</a></td><td>Pipe output to grep</td></tr>
+                <tr><td class="command-cell"><code>grep -c "error" logfile.txt</code><button class="copy-btn" onclick="copyToClipboard('grep -c \"error\" logfile.txt')">Copy</button><a href="https://linux.die.net/man/1/grep" target="_blank" class="learn-btn">Learn More</a></td><td>Count lines with a match</td></tr>
+                <tr><td class="command-cell"><code>ls > list.txt</code><button class="copy-btn" onclick="copyToClipboard('ls > list.txt')">Copy</button><a href="https://tldp.org/LDP/abs/html/io-redirection.html" target="_blank" class="learn-btn">Learn More</a></td><td>Save command output to a file</td></tr>
+                <tr><td class="command-cell"><code>echo "New entry" >> notes.txt</code><button class="copy-btn" onclick="copyToClipboard('echo \"New entry\" >> notes.txt')">Copy</button><a href="https://tldp.org/LDP/abs/html/io-redirection.html" target="_blank" class="learn-btn">Learn More</a></td><td>Append output to a file</td></tr>
             </tbody>
         </table>
 
