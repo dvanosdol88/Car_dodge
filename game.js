@@ -533,8 +533,8 @@ function checkCollisions() {
     }
 }
 
+// *** THIS IS THE CORRECTED GAME LOOP ***
 function animate(timestamp) {
-    // Initialize lastTime on the first frame
     if (!lastTime) {
         lastTime = timestamp;
     }
@@ -543,9 +543,10 @@ function animate(timestamp) {
 
     if (!gameOver) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw functions are called first
         drawRoad();
         drawTrees();
-        update(deltaTime);
         drawObstacles();
         drawTankMissiles();
         playerCar.draw(ctx);
@@ -553,7 +554,12 @@ function animate(timestamp) {
         drawExplosions();
         drawBonusTexts();
         drawScore();
+
+        // Then update the game state for the next frame
+        update(deltaTime);
     }
+    
+    // Request the next frame at the very end
     animationFrameId = requestAnimationFrame(animate);
 }
 
@@ -680,7 +686,6 @@ function initGame() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     
-    // Create the first set of objects when the game loads
     for (let i = 0; i < TREE_COUNT; i++) {
         generateTree(true);
     }
@@ -690,7 +695,6 @@ function initGame() {
 
     document.getElementById('introScreen').style.display = 'block';
 
-    // Setup all event listeners for buttons
     document.getElementById('restartButton').onclick = resetGame;
     document.getElementById('startButton').onclick = startGame;
     document.getElementById('continueToGame').onclick = showInitialScreen;
