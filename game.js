@@ -280,12 +280,11 @@ function drawScore() {
 function generateObstacle(isInitial) {
     const types = [Car, Motorcycle, OilSlick, Tank];
     const ObstacleClass = types[Math.floor(Math.random() * types.length)];
-
     const lane = Math.floor(Math.random() * 3);
     const initialRoadX = canvas.width / 2 - ROAD_WIDTH / 2;
     const xPosInLane = initialRoadX + (lane * LANE_WIDTH) + (LANE_WIDTH / 2);
-
     let obstacle;
+
     if (ObstacleClass === Car) {
         const colors = ['red', 'green', 'yellow', 'purple', 'darkblue', 'orange'];
         const color = colors[Math.floor(Math.random() * colors.length)];
@@ -305,7 +304,6 @@ function generateObstacle(isInitial) {
     } else {
         obstacle.y = -150 - Math.random() * 300;
     }
-
     obstacles.push(obstacle);
 }
 
@@ -326,35 +324,21 @@ function generateTree(isInitial) {
     } else {
         startY = -Math.random() * canvas.height;
     }
-    trees.push({ x: xPos, y: startY, width: treeWidth, height: treeHeight, type: 'tree' });
+    trees.push({ x: xPos, y: startY, width: treeWidth, height: treeHeight });
 }
 
 function createPlayerProjectile() {
     if (spinningActive || !canShoot) return;
     const now = Date.now();
     if (now - lastShotTime < shotCooldown) return;
-    const projectile = {
-        x: playerCar.x + playerCar.width / 2 - 5,
-        y: playerCar.y - 20,
-        width: 10,
-        height: 20,
-        color: 'white',
-        speed: 900
-    };
+    const projectile = { x: playerCar.x + playerCar.width / 2 - 5, y: playerCar.y - 20, width: 10, height: 20, color: 'white', speed: 900 };
     playerProjectiles.push(projectile);
     playerShootSound.triggerAttackRelease("C5", "16n");
     lastShotTime = now;
 }
 
 function createTankMissile(x, y) {
-    const missile = {
-        x: x - 5,
-        y: y,
-        width: 10,
-        height: 25,
-        color: 'red',
-        speed: gameSpeed + 300
-    };
+    const missile = { x: x - 5, y: y, width: 10, height: 25, color: 'red', speed: gameSpeed + 300 };
     tankMissiles.push(missile);
 }
 
@@ -379,7 +363,6 @@ function updateSpeed() {
     const speedRange = 100 - 25;
     const speedProgress = Math.min(score / maxScore, 1);
     currentMPH = Math.floor(25 + (speedRange * speedProgress));
-    currentMPH = Math.min(currentMPH, 100);
     const minGameSpeed = 240;
     const maxGameSpeed = 720;
     gameSpeed = minGameSpeed + ((maxGameSpeed - minGameSpeed) * speedProgress);
@@ -410,7 +393,6 @@ function update(deltaTime) {
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const obstacle = obstacles[i];
         obstacle.update(deltaTime, gameSpeed);
-
         if (obstacle instanceof Tank) {
             tanksPresent = true;
             const now = Date.now();
@@ -533,7 +515,6 @@ function checkCollisions() {
     }
 }
 
-// *** THIS IS THE CORRECTED GAME LOOP ***
 function animate(timestamp) {
     if (!lastTime) {
         lastTime = timestamp;
@@ -544,9 +525,9 @@ function animate(timestamp) {
     if (!gameOver) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Draw functions are called first
         drawRoad();
         drawTrees();
+        update(deltaTime);
         drawObstacles();
         drawTankMissiles();
         playerCar.draw(ctx);
@@ -554,12 +535,8 @@ function animate(timestamp) {
         drawExplosions();
         drawBonusTexts();
         drawScore();
-
-        // Then update the game state for the next frame
-        update(deltaTime);
     }
     
-    // Request the next frame at the very end
     animationFrameId = requestAnimationFrame(animate);
 }
 
@@ -611,10 +588,6 @@ function resetGame() {
     for (let i = 0; i < MAX_OBSTACLES; i++) generateObstacle(true);
 
     document.getElementById('gameOverScreen').style.display = 'none';
-    document.getElementById('leaderboardScreen').style.display = 'none';
-    document.getElementById('initialScreen').style.display = 'none';
-    document.getElementById('newHighScoreAnnouncement').style.display = 'none';
-    document.getElementById('rankDisplay').style.display = 'none';
     
     Tone.Transport.start();
     
@@ -638,10 +611,6 @@ function setupAudio() {
     backgroundMusic = new Tone.Sequence((time, note) => {
         backgroundMusicSynth.triggerAttackRelease(note, "8n", time);
     }, ["C4", "E4", "F4", "C4", "C4", "E4", "G4", "F4"]).start(0);
-    backgroundMusicSynth.envelope.attack = 0.01;
-    backgroundMusicSynth.envelope.decay = 0.2;
-    backgroundMusicSynth.envelope.sustain = 0.1;
-    backgroundMusicSynth.envelope.release = 0.5;
     Tone.Transport.bpm.value = 120;
     Tone.Transport.loop = true;
     Tone.Transport.loopEnd = "2m";
