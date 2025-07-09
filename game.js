@@ -367,29 +367,12 @@ function createBonusText(x, y, text, color = 'gold') {
     bonusTexts.push({ x: x, y: y, text: text, alpha: 1, size: 20, color: color });
 }
 
-async function sendHighScore(playerName, score) {
-    // ... same as before
-}
-
-async function fetchHighScores(limit = 10) {
-    // ... same as before
-}
-
-async function showLeaderboard() {
-    // ... same as before
-}
-
-function hideLeaderboard() {
-    document.getElementById('leaderboardScreen').style.display = 'none';
-}
-
-function showNewHighScoreAnnouncement(rank) {
-    // ... same as before
-}
-
-async function handleGameOver() {
-    // ... same as before
-}
+async function sendHighScore(playerName, score) { /* ... same as before ... */ }
+async function fetchHighScores(limit = 10) { /* ... same as before ... */ }
+async function showLeaderboard() { /* ... same as before ... */ }
+function hideLeaderboard() { /* ... same as before ... */ }
+function showNewHighScoreAnnouncement(rank) { /* ... same as before ... */ }
+async function handleGameOver() { /* ... same as before ... */ }
 
 function updateSpeed() {
     const maxScore = 5000;
@@ -551,6 +534,10 @@ function checkCollisions() {
 }
 
 function animate(timestamp) {
+    // Initialize lastTime on the first frame
+    if (!lastTime) {
+        lastTime = timestamp;
+    }
     const deltaTime = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
 
@@ -597,27 +584,91 @@ function handlePlayerMovement(deltaTime) {
 }
 
 function resetGame() {
-    // ... same as before
+    gameOver = false;
+    obstacles = [];
+    trees = [];
+    playerProjectiles = [];
+    tankMissiles = [];
+    explosions = [];
+    bonusTexts = [];
+    score = 0;
+    currentMPH = 25;
+    roadCurveOffset = 0;
+    curveDirection = 1;
+    playerCar.rotation = 0;
+    spinningActive = false;
+    canShoot = true;
+    lastShotTime = 0;
+    updateSpeed();
+
+    for (let i = 0; i < TREE_COUNT; i++) generateTree(true);
+    for (let i = 0; i < MAX_OBSTACLES; i++) generateObstacle(true);
+
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('leaderboardScreen').style.display = 'none';
+    document.getElementById('initialScreen').style.display = 'none';
+    document.getElementById('newHighScoreAnnouncement').style.display = 'none';
+    document.getElementById('rankDisplay').style.display = 'none';
+    
+    Tone.Transport.start();
+    
+    cancelAnimationFrame(animationFrameId);
+    lastTime = 0;
+    animationFrameId = requestAnimationFrame(animate);
 }
 
 function showInitialScreen() {
-    // ... same as before
+    document.getElementById('introScreen').style.display = 'none';
+    document.getElementById('initialScreen').style.display = 'block';
 }
 
 function restartToIntro() {
-    // ... same as before
+    document.getElementById('gameOverScreen').style.display = 'none';
+    document.getElementById('introScreen').style.display = 'block';
 }
 
 function setupAudio() {
-    // ... same as before
+    const backgroundMusicSynth = new Tone.FMSynth().toDestination();
+    backgroundMusic = new Tone.Sequence((time, note) => {
+        backgroundMusicSynth.triggerAttackRelease(note, "8n", time);
+    }, ["C4", "E4", "F4", "C4", "C4", "E4", "G4", "F4"]).start(0);
+    backgroundMusicSynth.envelope.attack = 0.01;
+    backgroundMusicSynth.envelope.decay = 0.2;
+    backgroundMusicSynth.envelope.sustain = 0.1;
+    backgroundMusicSynth.envelope.release = 0.5;
+    Tone.Transport.bpm.value = 120;
+    Tone.Transport.loop = true;
+    Tone.Transport.loopEnd = "2m";
+    oilSlickSound = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+    crashSound = new Tone.NoiseSynth({ noise: { type: "brown" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.3 } }).toDestination();
+    playerShootSound = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.001, decay: 0.05, sustain: 0.01, release: 0.05 } }).toDestination();
+    tankFireSound = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.4, attackCurve: "exponential" } }).toDestination();
+    tankExplosionSound = new Tone.NoiseSynth({ noise: { type: "white" }, envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.5 } }).toDestination();
+    tankRumbleSound = new Tone.Oscillator({ frequency: 40, type: "triangle" }).toDestination();
+    tankRumbleSound.volume.value = -20;
 }
 
 async function startGame() {
-    // ... same as before
+    const nameInput = document.getElementById('playerName');
+    playerName = nameInput.value.trim();
+    document.getElementById('initialScreen').style.display = 'none';
+    try {
+        await Tone.start();
+        resetGame();
+    } catch (e) {
+        console.error("Failed to start Tone.js or game:", e);
+    }
 }
 
 function resizeCanvas() {
-    // ... same as before
+    const parentWidth = window.innerWidth;
+    const parentHeight = window.innerHeight;
+    canvas.width = Math.min(parentWidth * 0.8, 600);
+    canvas.height = Math.min(parentHeight * 0.9, 800);
+    if (playerCar) {
+        playerCar.x = canvas.width / 2 - playerCar.width / 2;
+        playerCar.y = canvas.height - 100;
+    }
 }
 
 function initGame() {
@@ -642,7 +693,7 @@ function initGame() {
     // Setup all event listeners for buttons
     document.getElementById('restartButton').onclick = resetGame;
     document.getElementById('startButton').onclick = startGame;
-    document.getElementById('continueToGame').onclick = showInitialScreen; // This was the missing line
+    document.getElementById('continueToGame').onclick = showInitialScreen;
     document.getElementById('backToIntroButton').onclick = restartToIntro;
     document.getElementById('backToResumeButton').onclick = () => window.open('https://davidcfacfp.com', '_blank');
     document.getElementById('viewLeaderboardButton').onclick = showLeaderboard;
@@ -697,4 +748,8 @@ function initGame() {
     });
 
     setupAudio();
+}
+
+window.onload = function() {
+    initGame();
 }
