@@ -629,7 +629,7 @@ function initGame() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     
-    // *** THIS IS THE FIX: Added the initial object generation back in ***
+    // Create the first set of objects when the game loads
     for (let i = 0; i < TREE_COUNT; i++) {
         generateTree(true);
     }
@@ -639,14 +639,62 @@ function initGame() {
 
     document.getElementById('introScreen').style.display = 'block';
 
-    // ... Event listeners ...
+    // Setup all event listeners for buttons
     document.getElementById('restartButton').onclick = resetGame;
     document.getElementById('startButton').onclick = startGame;
-    // ... etc.
+    document.getElementById('continueToGame').onclick = showInitialScreen; // This was the missing line
+    document.getElementById('backToIntroButton').onclick = restartToIntro;
+    document.getElementById('backToResumeButton').onclick = () => window.open('https://davidcfacfp.com', '_blank');
+    document.getElementById('viewLeaderboardButton').onclick = showLeaderboard;
+    document.getElementById('viewLeaderboardFromGameOver').onclick = showLeaderboard;
+    document.getElementById('closeLeaderboard').onclick = () => {
+        hideLeaderboard();
+        document.getElementById('introScreen').style.display = 'block';
+    };
+    document.getElementById('playAgain').onclick = () => {
+        hideLeaderboard();
+        resetGame();
+    };
+    document.getElementById('resumeSign').onclick = () => window.open('https://davidcfacfp.com', '_blank');
+    document.getElementById('contactSign').onclick = async () => {
+        const userChoice = confirm("How would you like to contact David?\n\n✉️ Click OK to open your email app\n📋 Click Cancel to copy email to clipboard");
+        if (userChoice) {
+            window.location.href = 'mailto:david@davidcfacfp.com';
+        } else {
+            try {
+                await navigator.clipboard.writeText('david@davidcfacfp.com');
+                alert('✅ Email address copied to clipboard!');
+            } catch (error) {
+                alert('📧 Contact David at: david@davidcfacfp.com');
+            }
+        }
+    };
+    const leftButton = document.getElementById('leftButton');
+    const rightButton = document.getElementById('rightButton');
+    const shootButton = document.getElementById('shootButton');
+    leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; }, { passive: false });
+    leftButton.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
+    leftButton.addEventListener('mousedown', (e) => { keys['ArrowLeft'] = true; });
+    leftButton.addEventListener('mouseup', (e) => { keys['ArrowLeft'] = false; });
+    rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; }, { passive: false });
+    rightButton.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+    rightButton.addEventListener('mousedown', (e) => { keys['ArrowRight'] = true; });
+    rightButton.addEventListener('mouseup', (e) => { keys['ArrowRight'] = false; });
+    shootButton.addEventListener('touchstart', (e) => { e.preventDefault(); createPlayerProjectile(); }, { passive: false });
+    shootButton.addEventListener('mousedown', (e) => { createPlayerProjectile(); });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') {
+            e.preventDefault();
+        }
+        keys[e.key] = true;
+        if (e.key === ' ') {
+            createPlayerProjectile();
+        }
+    });
+    document.addEventListener('keyup', e => {
+        keys[e.key] = false;
+    });
 
     setupAudio();
-}
-
-window.onload = function() {
-    initGame();
 }
