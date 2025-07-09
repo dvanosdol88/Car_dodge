@@ -10,13 +10,17 @@ let explosions = []; // New: For tank explosions
 let bonusTexts = []; // New: For "100 Bonus Points!" messages
 
 let score = 0;
-let gameSpeed = 4; // Pixels per frame (faster initial speed)
+let gameSpeed = 240; // *** CHANGED: Speed in pixels PER SECOND
 let currentMPH = 25; // Current speed in MPH
 let gameOver = false;
 let roadCurveOffset = 0; // Current horizontal offset for road curves
 let curveDirection = 1; // 1 for right, -1 for left
-let playerSpeed = 8; // Player car movement speed
+let playerSpeed = 480; // *** CHANGED: Player speed in pixels PER SECOND
 let animationFrameId; // To store requestAnimationFrame ID for cancellation
+
+// *** NEW: Delta time variables
+let lastTime = 0;
+let deltaTime = 0;
 
 // Tone.js variables for music and sound effects
 let backgroundMusic;
@@ -43,7 +47,7 @@ const LANE_WIDTH = 100;
 const ROAD_WIDTH = LANE_WIDTH * 3; // 3 lanes
 const MAX_OBSTACLES = 5;
 const TREE_COUNT = 15; // More trees for better visual density
-const CURVE_STRENGTH = 0.0008; // How much the road curves per frame (gentle curve)
+const CURVE_STRENGTH = 0.05; // *** CHANGED: Adjusted for delta time
 const MAX_CURVE_OFFSET = 150; // Max horizontal shift for the road
 const TANK_FIRE_CHANCE = 0.005; // Chance per frame for a tank to fire
 const TANK_FIRE_COOLDOWN = 1500; // Min time between tank shots
@@ -557,7 +561,7 @@ function createPlayerProjectile() {
         width: 10,
         height: 20,
         color: 'white',
-        speed: 15
+        speed: 900 // *** CHANGED: pixels per second
     };
     playerProjectiles.push(projectile);
     playerShootSound.triggerAttackRelease("C5", "16n"); // Play player shoot sound
@@ -576,7 +580,7 @@ function createTankMissile(x, y) {
         width: 10,
         height: 25,
         color: 'red',
-        speed: gameSpeed + 5 // Missile speed relative to game speed
+        speed: gameSpeed + 300 // *** CHANGED: Missile speed relative to game speed
     };
     tankMissiles.push(missile);
 }
@@ -592,6 +596,7 @@ function createExplosion(x, y) {
         y: y,
         radius: 5,
         alpha: 1,
+        duration: 1000, // 1 second explosion
         startTime: Date.now()
     });
     tankExplosionSound.triggerAttackRelease("4n"); // Play explosion sound
@@ -634,7 +639,6 @@ async function sendHighScore(playerName, score) {
                 score: score,
                 timestamp: new Date().toISOString()
             }),
-            // Add timeout for better UX
             signal: AbortSignal.timeout(10000) // 10 second timeout
         });
 
@@ -648,7 +652,6 @@ async function sendHighScore(playerName, score) {
     } catch (error) {
         console.error('Failed to submit high score:', error);
         
-        // Show user-friendly error message
         let errorMessage = 'Could not connect to leaderboard server.';
         if (error.name === 'TimeoutError') {
             errorMessage = 'Connection to leaderboard timed out.';
@@ -656,7 +659,6 @@ async function sendHighScore(playerName, score) {
             errorMessage = 'Network connection error. Check your internet connection.';
         }
         
-        // Could add a toast notification here in the future
         console.warn('Leaderboard error:', errorMessage);
         return null;
     }
@@ -675,8 +677,7 @@ async function fetchHighScores(limit = 10) {
             headers: {
                 'Accept': 'application/json',
             },
-            // Add timeout for better UX
-            signal: AbortSignal.timeout(15000) // 15 second timeout for initial load
+            signal: AbortSignal.timeout(15000)
         });
         
         if (!response.ok) {
@@ -689,7 +690,6 @@ async function fetchHighScores(limit = 10) {
     } catch (error) {
         console.error('Failed to fetch high scores:', error);
         
-        // Show user-friendly error message
         let errorMessage = 'Could not load leaderboard.';
         if (error.name === 'TimeoutError') {
             errorMessage = 'Leaderboard is taking too long to load.';
@@ -709,7 +709,7 @@ async function testBackendConnection() {
     try {
         const response = await fetch('https://car-dodge-backend.onrender.com/cors-test', {
             method: 'GET',
-            signal: AbortSignal.timeout(5000) // Quick 5 second test
+            signal: AbortSignal.timeout(5000)
         });
         return response.ok;
     } catch (error) {
@@ -725,15 +725,12 @@ async function showLeaderboard() {
     const leaderboardScreen = document.getElementById('leaderboardScreen');
     const leaderboardList = document.getElementById('leaderboardList');
     
-    // Show loading message with better UX
     leaderboardList.innerHTML = '<p>🔄 Loading leaderboard...</p>';
     leaderboardScreen.style.display = 'block';
     
-    // Fetch scores with error handling
     const scores = await fetchHighScores(10);
     
     if (scores.length === 0) {
-        // Check if this is an error case or truly no scores
         const testConnection = await testBackendConnection();
         if (!testConnection) {
             leaderboardList.innerHTML = `
@@ -749,7 +746,6 @@ async function showLeaderboard() {
         return;
     }
     
-    // Build leaderboard HTML
     let leaderboardHTML = '';
     scores.forEach((scoreEntry, index) => {
         const rank = index + 1;
@@ -797,7 +793,6 @@ function showNewHighScoreAnnouncement(rank) {
     
     announcement.style.display = 'block';
     
-    // Hide after 4 seconds
     setTimeout(() => {
         announcement.style.display = 'none';
     }, 4000);
@@ -811,15 +806,12 @@ async function handleGameOver() {
         const result = await sendHighScore(playerName, score);
         
         if (result && result.rank) {
-            // Show rank in game over screen
             const rankDisplay = document.getElementById('rankDisplay');
             const playerRank = document.getElementById('playerRank');
             playerRank.textContent = result.rank;
             rankDisplay.style.display = 'block';
             
-            // Show high score announcement if in top 10
             if (result.rank <= 10) {
-                // Delay the announcement slightly so game over screen appears first
                 setTimeout(() => {
                     showNewHighScoreAnnouncement(result.rank);
                 }, 1000);
@@ -834,21 +826,18 @@ async function handleGameOver() {
  * Updates the game speed and speed limit sign
  */
 function updateSpeed() {
-    // Calculate MPH based on score (25 MPH to 100 MPH)
-    const maxScore = 5000; // Score at which max speed is reached
-    const speedRange = 100 - 25; // 75 MPH range
-    const speedProgress = Math.min(score / maxScore, 1); // 0 to 1
+    const maxScore = 5000;
+    const speedRange = 100 - 25;
+    const speedProgress = Math.min(score / maxScore, 1);
     
     currentMPH = Math.floor(25 + (speedRange * speedProgress));
-    currentMPH = Math.min(currentMPH, 100); // Cap at 100 MPH
+    currentMPH = Math.min(currentMPH, 100);
     
-    // Convert MPH to game speed (pixels per frame)
-    // 25 MPH = 4 pixels, 100 MPH = 12 pixels
-    const minGameSpeed = 4;
-    const maxGameSpeed = 12;
+    // *** CHANGED: Game speed logic now scales based on pixels per second
+    const minGameSpeed = 240; // 25 MPH
+    const maxGameSpeed = 720; // 100 MPH
     gameSpeed = minGameSpeed + ((maxGameSpeed - minGameSpeed) * speedProgress);
     
-    // Update speed limit sign
     document.getElementById('speedLimitNumber').textContent = currentMPH;
 }
 
@@ -856,8 +845,10 @@ function updateSpeed() {
  * Updates game state: obstacles, trees, projectiles, etc.
  */
 function update() {
+    // *** CHANGED: All movement is now multiplied by deltaTime for consistency
+    
     // Update road curve
-    roadCurveOffset += curveDirection * CURVE_STRENGTH * score;
+    roadCurveOffset += curveDirection * CURVE_STRENGTH * score * deltaTime;
     if (Math.abs(roadCurveOffset) > MAX_CURVE_OFFSET) {
         curveDirection *= -1; // Reverse curve direction
     }
@@ -877,13 +868,12 @@ function update() {
     }
 
     // Update obstacles
-    let tanksPresent = false; // Track if any tanks are visible
+    let tanksPresent = false;
     for (let i = obstacles.length - 1; i >= 0; i--) {
-        obstacles[i].y += gameSpeed;
+        obstacles[i].y += gameSpeed * deltaTime;
         
-        // Tank firing logic
         if (obstacles[i].type === 'tank') {
-            tanksPresent = true; // Tank is on screen
+            tanksPresent = true;
             const now = Date.now();
             if (Math.random() < TANK_FIRE_CHANCE && 
                 now - obstacles[i].lastFireTime > TANK_FIRE_COOLDOWN) {
@@ -903,15 +893,15 @@ function update() {
     // Tank rumbling sound management
     if (tankRumbleSound) {
         if (tanksPresent && tankRumbleSound.state !== 'started') {
-            tankRumbleSound.start(); // Start rumbling when tanks are present
+            tankRumbleSound.start();
         } else if (!tanksPresent && tankRumbleSound.state === 'started') {
-            tankRumbleSound.stop(); // Stop rumbling when no tanks are present
+            tankRumbleSound.stop();
         }
     }
 
     // Update trees
     for (let i = trees.length - 1; i >= 0; i--) {
-        trees[i].y += gameSpeed;
+        trees[i].y += gameSpeed * deltaTime;
         if (trees[i].y > canvas.height + 100) {
             trees.splice(i, 1);
         }
@@ -919,7 +909,7 @@ function update() {
 
     // Update player projectiles
     for (let i = playerProjectiles.length - 1; i >= 0; i--) {
-        playerProjectiles[i].y -= playerProjectiles[i].speed;
+        playerProjectiles[i].y -= playerProjectiles[i].speed * deltaTime;
         if (playerProjectiles[i].y < -20) {
             playerProjectiles.splice(i, 1);
         }
@@ -927,7 +917,7 @@ function update() {
 
     // Update tank missiles
     for (let i = tankMissiles.length - 1; i >= 0; i--) {
-        tankMissiles[i].y += tankMissiles[i].speed;
+        tankMissiles[i].y += tankMissiles[i].speed * deltaTime;
         if (tankMissiles[i].y > canvas.height + 25) {
             tankMissiles.splice(i, 1);
         }
@@ -935,18 +925,19 @@ function update() {
 
     // Update explosions
     for (let i = explosions.length - 1; i >= 0; i--) {
-        const elapsed = Date.now() - explosions[i].startTime;
-        explosions[i].radius = Math.min(30, 5 + elapsed * 0.05);
-        explosions[i].alpha = Math.max(0, 1 - elapsed / 1000);
-        if (explosions[i].alpha <= 0) {
+        const exp = explosions[i];
+        const elapsed = Date.now() - exp.startTime;
+        exp.radius = Math.min(30, 5 + elapsed * 0.05);
+        exp.alpha = Math.max(0, 1 - elapsed / exp.duration);
+        if (exp.alpha <= 0) {
             explosions.splice(i, 1);
         }
     }
 
     // Update bonus texts
     for (let i = bonusTexts.length - 1; i >= 0; i--) {
-        bonusTexts[i].y -= 2;
-        bonusTexts[i].alpha -= 0.02;
+        bonusTexts[i].y -= 120 * deltaTime; // Move up at 120 pixels per second
+        bonusTexts[i].alpha -= 0.6 * deltaTime; // Fade out over ~1.6 seconds
         if (bonusTexts[i].alpha <= 0) {
             bonusTexts.splice(i, 1);
         }
@@ -962,10 +953,7 @@ function update() {
         generateTree(false);
     }
 
-    // Increase game speed gradually (25 MPH to 100 MPH)
     updateSpeed();
-
-    // Check collisions
     checkCollisions();
 }
 
@@ -973,7 +961,7 @@ function update() {
  * Checks for collisions between various game elements.
  */
 function checkCollisions() {
-    // Player Car vs Obstacles (cars, motorcycles, oil slicks, tanks)
+    // Player Car vs Obstacles
     obstacles.forEach((obstacle, obstacleIndex) => {
         const adjustedObstacleX = obstacle.x + roadCurveOffset;
 
@@ -988,26 +976,18 @@ function checkCollisions() {
                     spinningActive = true;
                     spinStartTime = Date.now();
                     oilSlickSound.triggerAttackRelease("8n");
-                    obstacles.splice(obstacleIndex, 1); // Remove slick after hit
+                    obstacles.splice(obstacleIndex, 1);
                 }
             } else if (obstacle.type === 'car' || obstacle.type === 'motorcycle' || obstacle.type === 'tank') {
-                gameOver = true;
-                crashSound.triggerAttackRelease("4n");
-                document.getElementById('finalScore').innerText = score;
-                document.getElementById('gameOverScreen').style.display = 'block';
-                Tone.Transport.stop();
-                // Submit high score and handle result
-                handleGameOver();
-                // No need to cancelAnimationFrame here, animate() will handle it
+                endGame();
             }
         }
     });
 
     // Player Projectile vs Tanks
-    // Iterate backwards to safely remove elements during iteration
     for (let i = playerProjectiles.length - 1; i >= 0; i--) {
         const proj = playerProjectiles[i];
-        let hitTank = false; // Flag to check if projectile hit a tank
+        let hitTank = false;
 
         for (let j = obstacles.length - 1; j >= 0; j--) {
             const obstacle = obstacles[j];
@@ -1020,99 +1000,86 @@ function checkCollisions() {
                     proj.y < obstacle.y + obstacle.height &&
                     proj.y + proj.height > obstacle.y
                 ) {
-                    // Collision: Projectile hit tank!
-                    obstacles.splice(j, 1); // Remove tank
-                    createExplosion(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2); // Create explosion
-                    score += 100; // Add bonus points
+                    obstacles.splice(j, 1);
+                    createExplosion(adjustedObstacleX + obstacle.width / 2, obstacle.y + obstacle.height / 2);
+                    score += 100;
                     createBonusText(adjustedObstacleX + obstacle.width / 2, obstacle.y, "100 Bonus Points!");
                     hitTank = true;
-                    break; // Stop checking this projectile against other obstacles
+                    break;
                 }
             }
         }
         if (hitTank) {
-            playerProjectiles.splice(i, 1); // Remove projectile if it hit a tank
+            playerProjectiles.splice(i, 1);
         }
     }
-
 
     // Player Car vs Tank Missiles
     for (let i = tankMissiles.length - 1; i >= 0; i--) {
         const missile = tankMissiles[i];
-        // Tank missiles are already in world coordinates, no roadCurveOffset needed for them relative to player
         if (
             playerCar.x < missile.x + missile.width &&
             playerCar.x + playerCar.width > missile.x &&
             playerCar.y < missile.y + missile.height &&
             playerCar.y + playerCar.height > missile.y
         ) {
-            // Collision: Player hit by tank missile!
-            gameOver = true;
-            crashSound.triggerAttackRelease("4n");
-            document.getElementById('finalScore').innerText = score;
-            document.getElementById('gameOverScreen').style.display = 'block';
-            Tone.Transport.stop();
-            // Submit high score and handle result
-            handleGameOver();
-            // No need to cancelAnimationFrame here, animate() will handle it
-            return; // End game, no further checks needed
+            endGame();
+            return;
         }
     }
 }
 
 /**
  * The main game loop that clears, draws, and updates the game state.
+ * @param {number} timestamp - The current time provided by requestAnimationFrame.
  */
-function animate() {
-    // console.log("Animate frame running. Game Over:", gameOver); // Debug log
-    try {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+function animate(timestamp) {
+    // *** CHANGED: Calculate deltaTime
+    if (!lastTime) {
+        lastTime = timestamp;
+    }
+    deltaTime = (timestamp - lastTime) / 1000; // Time in seconds
+    lastTime = timestamp;
 
+    if (!gameOver) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawRoad();
         drawTrees();
-
-        // Only update and draw moving elements if game is not over
-        if (!gameOver) {
-            update(); // Update game state
-            drawObstacles(); // Draws cars, motorcycles, oil slicks, tanks
-            drawTankMissiles(); // Draw tank missiles on top of obstacles
-            drawPlayerCar();
-            drawPlayerProjectiles(); // Draw player projectiles on top of player car
-            drawExplosions(); // Draw explosions on top of everything
-            drawBonusTexts(); // Draw bonus texts on top
-            drawScore();
-        } else {
-            // If game is over, ensure final state is drawn (e.g., game over screen remains)
-            // The elements won't move, but the last frame before game over will persist
-            drawObstacles();
-            drawTankMissiles();
-            drawPlayerCar();
-            drawPlayerProjectiles();
-            drawExplosions();
-            drawBonusTexts();
-            drawScore();
-        }
-
-    } catch (e) {
-        console.error("Error in animate function:", e);
-        // No need to set gameOver = true here, as game over is handled by collisions.
-        // However, we should stop the animation loop if a critical rendering error occurs.
-        // For simplicity, we'll let it try to recover or user restarts.
-    } finally {
-        // ALWAYS request the next frame to keep the animation loop running
-        animationFrameId = requestAnimationFrame(animate);
+        update();
+        drawObstacles();
+        drawTankMissiles();
+        drawPlayerCar();
+        drawPlayerProjectiles();
+        drawExplosions();
+        drawBonusTexts();
+        drawScore();
     }
+
+    animationFrameId = requestAnimationFrame(animate);
+}
+
+// *** NEW: Centralized function to end the game
+function endGame() {
+    gameOver = true;
+    crashSound.triggerAttackRelease("4n");
+    document.getElementById('finalScore').innerText = score.toLocaleString();
+    document.getElementById('gameOverScreen').style.display = 'block';
+    Tone.Transport.stop();
+    if (tankRumbleSound && tankRumbleSound.state === 'started') {
+        tankRumbleSound.stop();
+    }
+    handleGameOver();
+    cancelAnimationFrame(animationFrameId); // Stop the loop
 }
 
 // Keyboard input handling
 let keys = {};
 document.addEventListener('keydown', e => {
-    // Prevent default arrow key scrolling
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
     }
     keys[e.key] = true;
-    if (e.key === ' ') { // Spacebar for shooting
+    if (e.key === ' ') {
         createPlayerProjectile();
     }
 });
@@ -1122,22 +1089,19 @@ document.addEventListener('keyup', e => {
 });
 
 /**
- * Handles player car movement based on pressed arrow keys or touch buttons,
- * ensuring the car stays within the curving road boundaries.
+ * Handles player car movement based on pressed arrow keys or touch buttons.
  */
 function handlePlayerMovement() {
-    if (spinningActive) return; // Prevent movement while spinning
+    if (spinningActive) return;
 
-    // Calculate current road boundaries based on roadCurveOffset
-    // Player car should stay within the visible road boundaries considering the curve
     const minX = (canvas.width / 2 - ROAD_WIDTH / 2) + roadCurveOffset;
     const maxX = (canvas.width / 2 + ROAD_WIDTH / 2) + roadCurveOffset - playerCar.width;
 
     if (keys['ArrowLeft']) {
-        playerCar.x = Math.max(playerCar.x - playerSpeed, minX);
+        playerCar.x = Math.max(playerCar.x - (playerSpeed * deltaTime), minX);
     }
     if (keys['ArrowRight']) {
-        playerCar.x = Math.min(playerCar.x + playerSpeed, maxX);
+        playerCar.x = Math.min(playerCar.x + (playerSpeed * deltaTime), maxX);
     }
 }
 
@@ -1145,7 +1109,6 @@ function handlePlayerMovement() {
  * Resets the game state and starts a new game.
  */
 function resetGame() {
-    cancelAnimationFrame(animationFrameId); // Stop any lingering loops
     gameOver = false;
     obstacles = [];
     trees = [];
@@ -1154,17 +1117,16 @@ function resetGame() {
     explosions = [];
     bonusTexts = [];
     score = 0;
-    gameSpeed = 4; // Start with faster speed
-    currentMPH = 25; // Reset to 25 MPH
+    gameSpeed = 240; // Pixels per second
+    currentMPH = 25;
     roadCurveOffset = 0;
     curveDirection = 1;
-    playerCar.rotation = 0; // Ensure rotation is reset
-    spinningActive = false; // Ensure spinning is reset
+    playerCar.rotation = 0;
+    spinningActive = false;
     canShoot = true;
     lastShotTime = 0;
+    lastTime = 0; // Reset lastTime for deltaTime calculation
 
-    // Re-initialize to respawn trees, obstacles, etc.
-    // This is crucial to get a fresh set of game elements.
     for (let i = 0; i < TREE_COUNT; i++) {
         generateTree(true);
     }
@@ -1177,10 +1139,12 @@ function resetGame() {
     document.getElementById('initialScreen').style.display = 'none';
     document.getElementById('newHighScoreAnnouncement').style.display = 'none';
     document.getElementById('rankDisplay').style.display = 'none';
-    // Resume music if it was stopped
+    
     Tone.Transport.start();
-    // Start animation loop again explicitly (though the unconditional requestAnimationFrame helps)
-    animate(); // Ensure animate is called to restart the loop
+    
+    // Cancel any old frame before starting a new one
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(animate);
 }
 
 function showInitialScreen() {
@@ -1189,46 +1153,23 @@ function showInitialScreen() {
 }
 
 function restartToIntro() {
-    cancelAnimationFrame(animationFrameId); // Stop any lingering loops
-    gameOver = false;
-    obstacles = [];
-    trees = [];
-    playerProjectiles = [];
-    tankMissiles = [];
-    explosions = [];
-    bonusTexts = [];
-    score = 0;
-    gameSpeed = 4; // Start with faster speed
-    currentMPH = 25; // Reset to 25 MPH
-    roadCurveOffset = 0;
-    curveDirection = 1;
-    playerCar.rotation = 0; // Ensure rotation is reset
-    spinningActive = false; // Ensure spinning is reset
-    canShoot = true;
-    lastShotTime = 0;
-
-    // Re-initialize to respawn trees, obstacles, etc.
-    for (let i = 0; i < TREE_COUNT; i++) {
-        generateTree(true);
-    }
-    for (let i = 0; i < MAX_OBSTACLES; i++) {
-        generateObstacle(true);
-    }
-
+    // This function can be simplified to just call resetGame and then show the intro screen
+    resetGame(); // Reset all game state
+    
+    // Stop the animation loop that resetGame started
+    cancelAnimationFrame(animationFrameId);
+    
+    // Hide game-related screens and show the intro
     document.getElementById('gameOverScreen').style.display = 'none';
     document.getElementById('leaderboardScreen').style.display = 'none';
     document.getElementById('initialScreen').style.display = 'none';
-    document.getElementById('newHighScoreAnnouncement').style.display = 'none';
-    document.getElementById('rankDisplay').style.display = 'none';
     document.getElementById('introScreen').style.display = 'block';
 }
 
 // Sets up Tone.js synths and sequences
 function setupAudio() {
-    // Create the synth first
     const backgroundMusicSynth = new Tone.FMSynth().toDestination();
     
-    // Spy Music (simple FM synth sequence)
     backgroundMusic = new Tone.Sequence((time, note) => {
         backgroundMusicSynth.triggerAttackRelease(note, "8n", time);
     }, ["C4", "E4", "F4", "C4", "C4", "E4", "G4", "F4"]).start(0);
@@ -1238,106 +1179,60 @@ function setupAudio() {
     backgroundMusicSynth.envelope.sustain = 0.1;
     backgroundMusicSynth.envelope.release = 0.5;
 
-    Tone.Transport.bpm.value = 120; // Adjust BPM if needed
+    Tone.Transport.bpm.value = 120;
     Tone.Transport.loop = true;
-    Tone.Transport.loopEnd = "2m"; // Loop every 2 measures
+    Tone.Transport.loopEnd = "2m";
 
-    // Oil Slick Sound (chaotic noise burst)
     oilSlickSound = new Tone.NoiseSynth({
-        noise: {
-            type: "pink"
-        },
-        envelope: {
-            attack: 0.005,
-            decay: 0.1,
-            sustain: 0,
-            release: 0.1
-        }
+        noise: { type: "pink" },
+        envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
     }).toDestination();
 
-    // Crash Sound (more aggressive noise burst)
     crashSound = new Tone.NoiseSynth({
-        noise: {
-            type: "brown"
-        },
-        envelope: {
-            attack: 0.01,
-            decay: 0.2,
-            sustain: 0.1,
-            release: 0.3
-        }
+        noise: { type: "brown" },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.3 }
     }).toDestination();
 
-    // Player Shoot Sound
     playerShootSound = new Tone.Synth({
-        oscillator: {
-            type: "triangle"
-        },
-        envelope: {
-            attack: 0.001,
-            decay: 0.05,
-            sustain: 0.01,
-            release: 0.05
-        }
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0.01, release: 0.05 }
     }).toDestination();
 
-    // Tank Fire Sound (more bassy and impactful)
     tankFireSound = new Tone.MembraneSynth({
         pitchDecay: 0.05,
         octaves: 10,
-        oscillator: {
-            type: "sine"
-        },
-        envelope: {
-            attack: 0.001,
-            decay: 0.4,
-            sustain: 0.01,
-            release: 0.4,
-            attackCurve: "exponential"
-        }
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.4, attackCurve: "exponential" }
     }).toDestination();
 
-
-    // Tank Explosion Sound (complex noise)
     tankExplosionSound = new Tone.NoiseSynth({
-        noise: {
-            type: "white" // White noise for a sharper explosion
-        },
-        envelope: {
-            attack: 0.01,
-            decay: 0.5,
-            sustain: 0,
-            release: 0.5
-        }
+        noise: { type: "white" },
+        envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.5 }
     }).toDestination();
     
-    // Tank Rumbling Sound (low frequency rumble)
     tankRumbleSound = new Tone.Oscillator({
-        frequency: 40, // Low frequency for rumbling effect
+        frequency: 40,
         type: "triangle"
     }).toDestination();
     
-    // Configure volume and filter for realistic rumble
-    tankRumbleSound.volume.value = -20; // Quiet background rumble
+    tankRumbleSound.volume.value = -20;
 }
 
 // Function to start the game after initial screen click
-async function startGame() { // Made async
-    // Get player name
+async function startGame() {
     const nameInput = document.getElementById('playerName');
     playerName = nameInput.value.trim();
     
-    console.log("Starting game..."); // Debug log
     document.getElementById('initialScreen').style.display = 'none';
     try {
         await Tone.start();
-        console.log("Tone.js started."); // Debug log
         Tone.Transport.start();
-        console.log("Tone.Transport started. Initiating animation loop."); // Debug log
-        animate(); // This starts the loop
+        
+        // Reset game state and start the animation loop
+        resetGame();
+
     } catch (e) {
         console.error("Failed to start Tone.js or game:", e);
-        // Optionally show an error message to the user
     }
 }
 
@@ -1353,7 +1248,6 @@ function resizeCanvas() {
     playerCar.y = canvas.height - 100;
 }
 
-
 // Game setup - this is the main entry point after functions are defined
 function initGame() {
     canvas = document.getElementById('gameCanvas');
@@ -1368,142 +1262,19 @@ function initGame() {
         rotation: 0
     };
 
-    resizeCanvas(); // Make canvas responsive
+    resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    obstacles = [];
-    trees = [];
-    playerProjectiles = [];
-    tankMissiles = [];
-    explosions = [];
-    bonusTexts = [];
-    score = 0;
-    gameSpeed = 4; // Start faster at 25 MPH
-    currentMPH = 25; // Initialize to 25 MPH
-    gameOver = false;
-    roadCurveOffset = 0;
-    curveDirection = 1;
-    spinningActive = false; // Reset spinning state
-    canShoot = true; // Reset shooting ability
-
-    // Generate initial trees
+    // Initial population of static elements
     for (let i = 0; i < TREE_COUNT; i++) {
         generateTree(true);
     }
-
-    // Generate initial obstacles
     for (let i = 0; i < MAX_OBSTACLES; i++) {
         generateObstacle(true);
     }
 
-    document.getElementById('gameOverScreen').style.display = 'none';
-    document.getElementById('leaderboardScreen').style.display = 'none';
-    document.getElementById('initialScreen').style.display = 'none';
     document.getElementById('introScreen').style.display = 'block';
+    
+    // Event listeners
     document.getElementById('restartButton').onclick = resetGame;
     document.getElementById('startButton').onclick = startGame;
-    document.getElementById('continueToGame').onclick = showInitialScreen;
-    document.getElementById('backToIntroButton').onclick = restartToIntro;
-    document.getElementById('backToResumeButton').onclick = () => {
-        window.open('https://davidcfacfp.com', '_blank');
-    };
-    
-    // Leaderboard button event listeners
-    document.getElementById('viewLeaderboardButton').onclick = showLeaderboard;
-    document.getElementById('viewLeaderboardFromGameOver').onclick = showLeaderboard;
-    document.getElementById('closeLeaderboard').onclick = () => {
-        hideLeaderboard();
-        document.getElementById('introScreen').style.display = 'block';
-    };
-    document.getElementById('playAgain').onclick = () => {
-        hideLeaderboard();
-        resetGame();
-    };
-
-    // Traffic Sign Navigation Button Event Listeners
-    document.getElementById('resumeSign').onclick = () => {
-        window.open('https://davidcfacfp.com', '_blank');
-    };
-    
-    document.getElementById('contactSign').onclick = async () => {
-        console.log('Contact button clicked');
-        
-        // Show user options instead of just trying mailto
-        const userChoice = confirm(
-            "How would you like to contact David?\n\n" +
-            "✉️ Click OK to open your email app\n" +
-            "📋 Click Cancel to copy email to clipboard"
-        );
-        
-        if (userChoice) {
-            // User chose to open email
-            try {
-                window.location.href = 'mailto:david@davidcfacfp.com';
-                console.log('Attempted to open email client');
-            } catch (error) {
-                console.error('Failed to open email client:', error);
-                // Fallback to copy
-                await copyEmailToClipboard();
-            }
-        } else {
-            // User chose to copy email
-            await copyEmailToClipboard();
-        }
-    };
-    
-    // Helper function to copy email to clipboard
-    async function copyEmailToClipboard() {
-        const email = 'david@davidcfacfp.com';
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(email);
-                alert('✅ Email address copied to clipboard!\n\n' + email);
-                console.log('Email copied to clipboard successfully');
-            } else {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = email;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                alert('✅ Email address copied to clipboard!\n\n' + email);
-                console.log('Email copied using fallback method');
-            }
-        } catch (error) {
-            console.error('Failed to copy email:', error);
-            alert('📧 Contact David at:\n\n' + email);
-        }
-    }
-
-    // Add touch controls
-    const leftButton = document.getElementById('leftButton');
-    const rightButton = document.getElementById('rightButton');
-    const shootButton = document.getElementById('shootButton'); // New shoot button
-
-    // Using touchstart/touchend for mobile and mousedown/mouseup for desktop clicks on buttons
-    // e.preventDefault() is crucial for touch to stop default browser behavior like scrolling/zooming
-    leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; }, { passive: false });
-    leftButton.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
-    leftButton.addEventListener('mousedown', (e) => { keys['ArrowLeft'] = true; });
-    leftButton.addEventListener('mouseup', (e) => { keys['ArrowLeft'] = false; });
-
-    rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; }, { passive: false });
-    rightButton.addEventListener('touchend', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
-    rightButton.addEventListener('mousedown', (e) => { keys['ArrowRight'] = true; });
-    rightButton.addEventListener('mouseup', (e) => { keys['ArrowRight'] = false; });
-
-    // Shoot button events
-    shootButton.addEventListener('touchstart', (e) => { e.preventDefault(); createPlayerProjectile(); }, { passive: false });
-    shootButton.addEventListener('mousedown', (e) => { createPlayerProjectile(); });
-
-
-    // Initialize Tone.js instruments
-    setupAudio();
-}
-
-
-// Start the game initialization when the window has fully loaded
-window.onload = function() {
-    initGame();
-}
