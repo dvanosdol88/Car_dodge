@@ -357,12 +357,130 @@ function createBonusText(x, y, text, color = 'gold') {
     bonusTexts.push({ x: x, y: y, text: text, alpha: 1, size: 20, color: color });
 }
 
-async function sendHighScore(playerName, score) { /* ... same as before ... */ }
-async function fetchHighScores(limit = 10) { /* ... same as before ... */ }
-async function showLeaderboard() { /* ... same as before ... */ }
-function hideLeaderboard() { /* ... same as before ... */ }
-function showNewHighScoreAnnouncement(rank) { /* ... same as before ... */ }
-async function handleGameOver() { /* ... same as before ... */ }
+async function sendHighScore(playerName, score) {
+    try {
+        const response = await fetch('https://car-dodge-backend.onrender.com/score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                playerName, 
+                score,
+                timestamp: new Date().toISOString()
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to submit score');
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error submitting score:', error);
+        return null;
+    }
+}
+
+async function fetchHighScores(limit = 10) {
+    try {
+        const response = await fetch(`https://car-dodge-backend.onrender.com/scores?limit=${limit}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch scores');
+        }
+        
+        const data = await response.json();
+        return data.scores || [];
+    } catch (error) {
+        console.error('Error fetching scores:', error);
+        return [];
+    }
+}
+
+async function showLeaderboard() {
+    const leaderboardScreen = document.getElementById('leaderboardScreen');
+    const leaderboardList = document.getElementById('leaderboardList');
+    
+    leaderboardScreen.style.display = 'block';
+    leaderboardList.innerHTML = '<p>Loading scores...</p>';
+    
+    try {
+        const scores = await fetchHighScores(10);
+        
+        if (scores.length === 0) {
+            leaderboardList.innerHTML = '<p>No scores yet. Be the first!</p>';
+            return;
+        }
+        
+        let html = '';
+        scores.forEach((score, index) => {
+            const rank = index + 1;
+            const isCurrentPlayer = score.playerName === playerName;
+            const isTopScore = rank === 1;
+            
+            html += `
+                <div class="score-entry ${isTopScore ? 'top-score' : ''} ${isCurrentPlayer ? 'current-player' : ''}">
+                    <span class="rank">#${rank}</span>
+                    <span class="player-name">${score.playerName || 'Anonymous'}</span>
+                    <span class="score-value">${score.score.toLocaleString()}</span>
+                </div>
+            `;
+        });
+        
+        leaderboardList.innerHTML = html;
+    } catch (error) {
+        console.error('Error showing leaderboard:', error);
+        leaderboardList.innerHTML = '<p>Error loading scores. Please try again.</p>';
+    }
+}
+
+function hideLeaderboard() {
+    document.getElementById('leaderboardScreen').style.display = 'none';
+}
+
+function showNewHighScoreAnnouncement(rank) {
+    const announcement = document.getElementById('newHighScoreAnnouncement');
+    const highScoreText = document.getElementById('highScoreText');
+    
+    if (rank === 1) {
+        highScoreText.textContent = "You're #1! Amazing!";
+    } else if (rank <= 3) {
+        highScoreText.textContent = `Top 3! You're ranked #${rank}!`;
+    } else if (rank <= 10) {
+        highScoreText.textContent = `Top 10! You're ranked #${rank}!`;
+    } else {
+        highScoreText.textContent = `Great job! Ranked #${rank}!`;
+    }
+    
+    announcement.style.display = 'block';
+    
+    setTimeout(() => {
+        announcement.style.display = 'none';
+    }, 3000);
+}
+
+async function handleGameOver() {
+    if (!playerName || playerName.trim() === '') {
+        return;
+    }
+    
+    try {
+        const result = await sendHighScore(playerName, score);
+        
+        if (result && result.rank) {
+            document.getElementById('rankDisplay').style.display = 'block';
+            document.getElementById('playerRank').textContent = result.rank;
+            
+            if (result.rank <= 10) {
+                showNewHighScoreAnnouncement(result.rank);
+            }
+        }
+    } catch (error) {
+        console.error('Error handling game over:', error);
+    }
+}
 
 function updateSpeed() {
     const maxScore = 5000;

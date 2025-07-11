@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Car Dodge Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status { font-weight: bold; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Car Dodge Game Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>File Status</h2>
+        <p>Checking if files are loading correctly...</p>
+        <div id="fileStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>JavaScript Test</h2>
+        <p>Testing if game.js loads without errors...</p>
+        <div id="jsStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Canvas Test</h2>
+        <canvas id="testCanvas" width="300" height="200" style="border: 1px solid #ccc;"></canvas>
+        <div id="canvasStatus"></div>
+    </div>
+
+    <script>
+        // Test if we can load the stylesheet
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'style.css';
+        link.onload = () => {
+            document.getElementById('fileStatus').innerHTML = '<span class="status success">✓ style.css loaded successfully</span>';
+        };
+        link.onerror = () => {
+            document.getElementById('fileStatus').innerHTML = '<span class="status error">✗ Failed to load style.css</span>';
+        };
+        document.head.appendChild(link);
+        
+        // Test canvas
+        const testCanvas = document.getElementById('testCanvas');
+        const testCtx = testCanvas.getContext('2d');
+        testCtx.fillStyle = 'green';
+        testCtx.fillRect(10, 10, 50, 50);
+        testCtx.fillStyle = 'black';
+        testCtx.fillText('Canvas is working!', 70, 35);
+        document.getElementById('canvasStatus').innerHTML = '<span class="status success">✓ Canvas rendering works</span>';
+        
+        // Test if game.js loads
+        const script = document.createElement('script');
+        script.src = 'game.js';
+        script.onload = () => {
+            document.getElementById('jsStatus').innerHTML = '<span class="status success">✓ game.js loaded</span>';
+            // Check if key variables exist
+            if (typeof keys !== 'undefined') {
+                document.getElementById('jsStatus').innerHTML += '<br><span class="status success">✓ keys variable is defined</span>';
+            } else {
+                document.getElementById('jsStatus').innerHTML += '<br><span class="status error">✗ keys variable is NOT defined</span>';
+            }
+        };
+        script.onerror = () => {
+            document.getElementById('jsStatus').innerHTML = '<span class="status error">✗ Failed to load game.js</span>';
+        };
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>

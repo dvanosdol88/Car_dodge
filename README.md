@@ -146,6 +146,16 @@ The game evolved through several phases:
 
 ## 🔄 Recent Updates
 
+### Latest Fixes (2025-07-11)
+- **Critical Bug Fixes**:
+  - ✅ Fixed missing `drawRect` function that prevented game rendering
+  - ✅ Implemented complete leaderboard functionality (was placeholder code)
+  - ✅ Connected frontend to backend API endpoints
+  - ✅ Fixed API endpoint URLs to match backend routes (/score and /scores)
+  - ✅ Added timestamp to score submissions as required by backend
+  - ✅ Fixed score data parsing to handle backend response format
+
+### Previous Updates
 - **MUTCD-Authentic Highway Signs**: Researched and implemented official FHWA design standards
   - Rest Area sign: Official Pantone 294 blue (#003f87) with FHWA Highway Gothic typography
   - Exit signs: Official MUTCD highway green (#006A38) with proper letter spacing
