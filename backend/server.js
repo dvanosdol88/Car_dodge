@@ -23,8 +23,12 @@ app.use((req, res, next) => {
     const allowedOrigins = [
         'https://www.dvo88.com',
         'https://dvo88.com',
+        'https://car-dodge.dvo88.com',
+        'https://www.car-dodge.dvo88.com',
         'http://localhost:3000',
-        'http://127.0.0.1:3000'
+        'http://127.0.0.1:3000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000'
     ];
     
     const origin = req.get('Origin');
