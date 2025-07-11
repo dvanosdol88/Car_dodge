@@ -207,6 +207,11 @@ class Tank extends Obstacle {
 
 // --- Drawing Functions ---
 
+function drawRect(x, y, width, height, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+}
+
 function drawRoad() {
     const roadCenterX = canvas.width / 2 + roadCurveOffset;
     const roadX = roadCenterX - ROAD_WIDTH / 2;
