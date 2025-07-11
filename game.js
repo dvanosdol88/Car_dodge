@@ -8,6 +8,7 @@ let playerProjectiles = [];
 let tankMissiles = [];
 let explosions = [];
 let bonusTexts = [];
+let keys = {}; // Track keyboard input
 
 let score = 0;
 let gameSpeed = 240;
