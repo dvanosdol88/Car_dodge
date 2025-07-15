@@ -21,7 +21,7 @@ let animationFrameId;
 let lastTime = 0;
 
 // Tone.js variables
-let backgroundMusic, oilSlickSound, crashSound, playerShootSound, tankExplosionSound, tankFireSound, tankRumbleSound;
+let backgroundMusic, backgroundMusicPlayer, oilSlickSound, crashSound, playerShootSound, tankExplosionSound, tankFireSound, tankRumbleSound;
 
 // Game state variables
 let spinningActive = false;
@@ -671,6 +671,12 @@ function endGame() {
     document.getElementById('finalScore').innerText = score.toLocaleString();
     document.getElementById('gameOverScreen').style.display = 'block';
     Tone.Transport.stop();
+    
+    // Stop the background music
+    if (backgroundMusicPlayer && backgroundMusicPlayer.state === 'started') {
+        backgroundMusicPlayer.stop();
+    }
+    
     if (tankRumbleSound && tankRumbleSound.state === 'started') {
         tankRumbleSound.stop();
     }
@@ -715,6 +721,11 @@ function resetGame() {
     
     Tone.Transport.start();
     
+    // Start the background music
+    if (backgroundMusicPlayer && backgroundMusicPlayer.loaded) {
+        backgroundMusicPlayer.start();
+    }
+    
     cancelAnimationFrame(animationFrameId);
     lastTime = 0;
     animationFrameId = requestAnimationFrame(animate);
@@ -731,13 +742,15 @@ function restartToIntro() {
 }
 
 function setupAudio() {
-    const backgroundMusicSynth = new Tone.FMSynth().toDestination();
-    backgroundMusic = new Tone.Sequence((time, note) => {
-        backgroundMusicSynth.triggerAttackRelease(note, "8n", time);
-    }, ["C4", "E4", "F4", "C4", "C4", "E4", "G4", "F4"]).start(0);
+    // Load and setup the background music MP3
+    backgroundMusicPlayer = new Tone.Player({
+        url: "Chasing Shadows.mp3",
+        loop: true,
+        autostart: false,
+        volume: -10
+    }).toDestination();
+    
     Tone.Transport.bpm.value = 120;
-    Tone.Transport.loop = true;
-    Tone.Transport.loopEnd = "2m";
     oilSlickSound = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
     crashSound = new Tone.NoiseSynth({ noise: { type: "brown" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.3 } }).toDestination();
     playerShootSound = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.001, decay: 0.05, sustain: 0.01, release: 0.05 } }).toDestination();
